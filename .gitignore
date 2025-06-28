@@ -1,0 +1,7 @@
+# Python cache
+__pycache__/
+*.pyc
+
+# dotenv environment variables
+.env
+.env.*
