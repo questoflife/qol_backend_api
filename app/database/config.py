@@ -23,9 +23,9 @@ load_dotenv()
 
 
 # Global variable declarations (type only, no assignment)
-SERVER_URL: str
+ASYNC_SERVER_URL: str
+SYNC_SERVER_URL: str
 DB_NAME: str
-DATABASE_URL: str
 _engine = None
 _async_session_factory = None
 
@@ -33,7 +33,7 @@ _async_session_factory = None
 # Configuration/init functions
 def _init_config():
     """Initialize configuration constants."""
-    global SERVER_URL, DB_NAME, DATABASE_URL
+    global ASYNC_SERVER_URL, SYNC_SERVER_URL, DB_NAME
     # Get database configuration
     db_user = os.getenv("DB_USER")
     db_password = os.getenv("DB_PASSWORD")
@@ -44,29 +44,45 @@ def _init_config():
         raise RuntimeError(
             "Database configuration is incomplete. "
             "Set all of DB_USER, DB_PASSWORD, DB_HOST, DB_PORT, and DB_NAME.")
-    SERVER_URL = f"mysql+aiomysql://{db_user}:{db_password}@{db_host}:{db_port}"
+    ASYNC_SERVER_URL = f"mysql+aiomysql://{db_user}:{db_password}@{db_host}:{db_port}"
+    SYNC_SERVER_URL = f"mysql+pymysql://{db_user}:{db_password}@{db_host}:{db_port}"
     DB_NAME = db_name  # type: ignore
-    DATABASE_URL = f"{SERVER_URL}/{DB_NAME}"
 
 
 # Call to initialize config
 _init_config()
 
 
-def get_engine():
+def get_engine(no_cache: bool = False):
     """Get or create the async SQLAlchemy engine."""
     global _engine
-    if _engine is None:
-        _engine = create_async_engine(DATABASE_URL, echo=True)
-    return _engine
+    if _engine is not None and not no_cache:
+        # return the cached engine
+        return _engine
+
+    # create a new engine
+    engine_new = create_async_engine(f"{ASYNC_SERVER_URL}/{DB_NAME}", echo=True)
+    if not no_cache:    
+        # cache the engine
+        _engine = engine_new
+
+    return engine_new
 
 
-def get_session_factory():
+def get_session_factory(no_cache: bool = False):
     """Get or create the async session factory."""
     global _async_session_factory
-    if _async_session_factory is None:
-        _async_session_factory = async_sessionmaker(get_engine(), expire_on_commit=False)
-    return _async_session_factory
+    if _async_session_factory is not None and not no_cache:
+        # return the cached session factory
+        return _async_session_factory
+
+    # create a new session factory
+    async_session_factory_new = async_sessionmaker(get_engine(no_cache), expire_on_commit=False)
+    if not no_cache:
+        # cache the session factory
+        _async_session_factory = async_session_factory_new
+
+    return async_session_factory_new
 
 
 async def get_async_session() -> AsyncGenerator[AsyncSession, None]:

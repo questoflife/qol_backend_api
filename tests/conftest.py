@@ -12,18 +12,16 @@ if os.getenv("APP_ENV") != "test":
     raise RuntimeError("Tests must be run with APP_ENV=test! Set APP_ENV in your .env.test file.")
 
 @pytest.fixture(scope="session")
-async def test_database():
+def test_database():
     """
     Session-scoped fixture that sets up and tears down the pytest database.
     Runs once per test session.
     """
     # Setup
-    await destructive_recreate_database_and_tables()
-    
+    destructive_recreate_database_and_tables()
     yield  # This is where tests run
-    
     # Teardown
-    await destructive_drop_test_database()
+    destructive_drop_test_database()
 
 
 @pytest.fixture

@@ -5,3 +5,5 @@ __pycache__/
 # dotenv environment variables
 .env
 .env.*
+
+db_inspect.log
