@@ -14,35 +14,27 @@ from app.database.repository import get_user_key_value, set_user_key_value
 # ============================================================================
 
 @pytest.fixture
-async def user1(clean_db):
+async def user1(clean_db_session):
     """Create user1 with a single key-value pair."""
-    session = clean_db
-    await set_user_key_value(session, "user1", "theme", "light")
-    return session
+    await set_user_key_value(clean_db_session, "user1", "theme", "light")
 
 
 @pytest.fixture
-async def user1_updated(user1):
+async def user1_updated(user1, clean_db_session):
     """Create user1 with an updated key-value pair."""
-    session = user1
-    await set_user_key_value(session, "user1", "theme", "dark")
-    return session
+    await set_user_key_value(clean_db_session, "user1", "theme", "dark")
 
 
 @pytest.fixture
-async def user1_multiple_keys(user1):
+async def user1_multiple_keys(user1, clean_db_session):
     """Create user1 with multiple key-value pairs."""
-    session = user1
-    await set_user_key_value(session, "user1", "language", "en")
-    return session
+    await set_user_key_value(clean_db_session, "user1", "language", "en")
 
 
 @pytest.fixture
-async def user2(clean_db):
+async def user2(clean_db_session):
     """Create user2 with the same key as user1."""
-    session = clean_db
-    await set_user_key_value(session, "user2", "theme", "light")
-    return session
+    await set_user_key_value(clean_db_session, "user2", "theme", "light")
 
 
 # ============================================================================
@@ -50,38 +42,34 @@ async def user2(clean_db):
 # ============================================================================
 
 @pytest.mark.asyncio
-async def test_create_key_value(user1):
+async def test_create_key_value(user1, clean_db_session):
     """Test creating a user key-value pair."""
-    session = user1
-    value = await get_user_key_value(session, "user1", "theme")
+    value = await get_user_key_value(clean_db_session, "user1", "theme")
     assert value == "light"
 
 
 @pytest.mark.asyncio
-async def test_update_key_value(user1_updated):
+async def test_update_key_value(user1_updated, clean_db_session):
     """Test updating an existing key-value pair."""
-    session = user1_updated
-    value = await get_user_key_value(session, "user1", "theme")
+    value = await get_user_key_value(clean_db_session, "user1", "theme")
     assert value == "dark"
 
 
 @pytest.mark.asyncio
-async def test_add_second_key(user1_multiple_keys):
+async def test_add_second_key(user1_multiple_keys, clean_db_session):
     """Test adding a second key to an existing user."""
-    session = user1_multiple_keys
-    value = await get_user_key_value(session, "user1", "language")
+    value = await get_user_key_value(clean_db_session, "user1", "language")
     assert value == "en"
     
     # Verify the original theme key remains unchanged
-    theme_value = await get_user_key_value(session, "user1", "theme")
+    theme_value = await get_user_key_value(clean_db_session, "user1", "theme")
     assert theme_value == "light"
 
 
 @pytest.mark.asyncio
-async def test_create_user2(user2):
+async def test_create_user2(user2, clean_db_session):
     """Test creating a second user with the same key."""
-    session = user2
-    value = await get_user_key_value(session, "user2", "theme")
+    value = await get_user_key_value(clean_db_session, "user2", "theme")
     assert value == "light"
 
 
@@ -90,20 +78,18 @@ async def test_create_user2(user2):
 # ============================================================================
 
 @pytest.mark.asyncio
-async def test_user2_isolation(user1_updated, user2):
+async def test_user2_isolation(user1_updated, user2, clean_db_session):
     """Test that user2 creation doesn't interfere with user1."""
-    session = user1_updated
-    
     # Verify user2 has theme=light
-    user2_theme = await get_user_key_value(session, "user2", "theme")
+    user2_theme = await get_user_key_value(clean_db_session, "user2", "theme")
     assert user2_theme == "light"
     
     # Verify user1 still has theme=dark (from user1_updated)
-    user1_theme = await get_user_key_value(session, "user1", "theme")
+    user1_theme = await get_user_key_value(clean_db_session, "user1", "theme")
     assert user1_theme == "dark"
     
     # Verify user2 has exactly one record
-    result = await session.execute(
+    result = await clean_db_session.execute(
         select(UserKeyValue).where(UserKeyValue.user_id == "user2")
     )
     user2_records = result.scalars().all()
@@ -112,7 +98,7 @@ async def test_user2_isolation(user1_updated, user2):
     assert user2_records[0].value == "light"
     
     # Verify user1 has exactly one record
-    result = await session.execute(
+    result = await clean_db_session.execute(
         select(UserKeyValue).where(UserKeyValue.user_id == "user1")
     )
     user1_records = result.scalars().all()
@@ -126,16 +112,14 @@ async def test_user2_isolation(user1_updated, user2):
 # ============================================================================
 
 @pytest.mark.asyncio
-async def test_get_nonexistent_user(clean_db):
+async def test_get_nonexistent_user(clean_db_session):
     """Test getting a key for a user that doesn't exist."""
-    session = clean_db
-    value = await get_user_key_value(session, "nonexistent_user", "theme")
+    value = await get_user_key_value(clean_db_session, "nonexistent_user", "theme")
     assert value is None
 
 
 @pytest.mark.asyncio
-async def test_get_nonexistent_key(user1):
+async def test_get_nonexistent_key(user1, clean_db_session):
     """Test getting a key that doesn't exist for an existing user."""
-    session = user1
-    value = await get_user_key_value(session, "user1", "nonexistent_key")
+    value = await get_user_key_value(clean_db_session, "user1", "nonexistent_key")
     assert value is None 

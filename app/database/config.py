@@ -12,6 +12,7 @@ This ensures the config is simple, robust, and safe for all environments.
 """
 import os
 from typing import AsyncGenerator
+from functools import lru_cache
 import sys
 
 from dotenv import load_dotenv
@@ -53,44 +54,42 @@ def _init_config():
 _init_config()
 
 
-def get_engine(no_cache: bool = False):
-    """Get or create the async SQLAlchemy engine."""
-    global _engine
-    if _engine is not None and not no_cache:
-        # return the cached engine
-        return _engine
-
-    # create a new engine
-    engine_new = create_async_engine(f"{ASYNC_SERVER_URL}/{DB_NAME}", echo=True)
-    if not no_cache:    
-        # cache the engine
-        _engine = engine_new
-
-    return engine_new
-
-
-def get_session_factory(no_cache: bool = False):
-    """Get or create the async session factory."""
-    global _async_session_factory
-    if _async_session_factory is not None and not no_cache:
-        # return the cached session factory
-        return _async_session_factory
-
-    # create a new session factory
-    async_session_factory_new = async_sessionmaker(get_engine(no_cache), expire_on_commit=False)
-    if not no_cache:
-        # cache the session factory
-        _async_session_factory = async_session_factory_new
-
-    return async_session_factory_new
-
-
-async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
+# --- Pure creation functions ---
+def create_app_async_engine():
     """
-    Dependency that provides an async SQLAlchemy session.
+    Create a new async SQLAlchemy engine for the app's configured database (from .env).
+    """
+    return create_async_engine(f"{ASYNC_SERVER_URL}/{DB_NAME}", echo=True)
+
+
+def create_app_async_session_factory(engine):
+    """
+    Create a new async session factory for the app's configured database (from .env) using the provided engine.
+    """
+    return async_sessionmaker(engine, expire_on_commit=False)
+
+
+# --- Cached manager functions for production ---
+@lru_cache(maxsize=1)
+def get_cached_app_async_engine():
+    """Get the cached async engine for the app's configured database (from .env)."""
+    return create_app_async_engine()
+
+
+@lru_cache(maxsize=1)
+def get_cached_app_async_session_factory():
+    """Get the cached async session factory for the app's configured database (from .env)."""
+    engine = get_cached_app_async_engine()
+    return create_app_async_session_factory(engine)
+
+
+# --- Dependency for FastAPI ---
+async def get_app_async_session() -> AsyncGenerator[AsyncSession, None]:
+    """
+    Dependency that provides an async SQLAlchemy session using the cached session factory.
     Yields:
         AsyncSession: An active SQLAlchemy async session.
     """
-    session_factory = get_session_factory()
+    session_factory = get_cached_app_async_session_factory()
     async with session_factory() as session:
-        yield session 
+        yield session

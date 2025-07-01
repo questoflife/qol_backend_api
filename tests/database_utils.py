@@ -5,11 +5,12 @@ Provides functions to drop, recreate, and initialize the test database.
 SAFETY PRINCIPLE:
 - All functions require APP_ENV=test and will raise if not set.
 - All destructive operations are clearly marked and should never be used outside of test environments.
-- Always use get_pytest_session_factory for session creation in tests. This ensures tests only run in the test environment and never touch production or dev databases.
+- Always use create_pytest_engine_and_session_factory for session creation in tests. This ensures tests only run in the test environment and never touch production or dev databases.
+- The caller is responsible for disposing the engine after use.
 """
 from sqlalchemy import text, create_engine
 import os
-from app.database.config import DB_NAME, SYNC_SERVER_URL, get_session_factory
+from app.database.config import DB_NAME, SYNC_SERVER_URL, create_app_async_engine, create_app_async_session_factory
 
 def destructive_recreate_database_and_tables() -> None:
     """
@@ -48,11 +49,22 @@ def destructive_drop_test_database() -> None:
         conn.execute(text(f"DROP DATABASE IF EXISTS `{DB_NAME}`"))
     server_engine.dispose()
 
-def get_pytest_session_factory():
+def create_pytest_engine_and_session_factory():
     """
-    Always use this function for session creation in tests!
+    Always use this function for engine and session factory creation in tests!
     Ensures tests only run in the test environment.
+    Returns:
+        (engine, session_factory):
+            - engine: a fresh async SQLAlchemy engine (must be disposed by the caller)
+            - session_factory: a fresh async session factory bound to the engine
+    Usage:
+        engine, session_factory = create_pytest_engine_and_session_factory()
+        async with session_factory() as session:
+            ...
+        await engine.dispose()
     """
     if os.getenv("APP_ENV") != "test":
-        raise RuntimeError("get_pytest_session_factory can only be used with APP_ENV=test!")
-    return get_session_factory(no_cache=True) 
+        raise RuntimeError("create_pytest_engine_and_session_factory can only be used with APP_ENV=test!")
+    engine = create_app_async_engine()
+    session_factory = create_app_async_session_factory(engine)
+    return engine, session_factory 
