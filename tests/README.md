@@ -33,13 +33,16 @@ Tests the FastAPI endpoints and concurrency:
 - **Concurrency testing**: Race conditions, high load
 - **Load testing**: Mixed operations under stress
 
+### `test_db_inspect.py`
+Inspects all databases and tables on the server. This test is dependent on the `clean_db` fixture, ensuring a clean state before inspection.
+
 ## Fixtures
 
 ### `test_database` (session-scoped)
 Sets up and tears down the test database once per test session.
 
 ### `clean_db` (function-scoped)
-Provides a clean database session with all data cleared before and after each test.
+Provides a clean database session with all data cleared before and after each test. All destructive operations are strictly gated by `APP_ENV=test` and will fail otherwise.
 
 ### Database Test Fixtures
 - `user1` - Creates user1 with one key-value pair (theme=light)
@@ -101,28 +104,22 @@ async def test_concurrent_sets():
 ## Environment Variables
 
 Required in `.env`:
+- `APP_ENV` - Must be set to `test` for running tests and destructive operations
 - `DB_USER` - Database username
 - `DB_PASSWORD` - Database password  
 - `DB_HOST` - Database host
 - `DB_PORT` - Database port
-- `DB_NAME_TEST` - Test database name
+- `DB_NAME` - Database name (should be a test database when running tests)
+
+See [../ENVIRONMENT_SETUP.md](../ENVIRONMENT_SETUP.md) for full details.
 
 ## Safety
 
-- Automatic pytest detection via `PYTEST_CURRENT_TEST` environment variable
-- Test utilities use dedicated `DB_NAME_TEST` variable (never `DB_NAME`)
-- Test utilities fail with clear error if not running in pytest mode
-- Test database names must end with `_test` or start with `test`
-- Prevents accidental modification of production databases
-
-## Safety Architecture
-
-Test utilities implement a critical safety principle:
-
-- **DB_NAME**: Used by main application logic (points to test database when running pytest)
-- **DB_NAME_TEST**: Used by test utilities (safety guarantee)
-
-Test utilities ONLY use `DB_NAME_TEST` to ensure they can never accidentally operate on production databases, even if there are bugs in the pytest detection logic.
+- All destructive test operations are strictly gated by `APP_ENV=test` and will fail otherwise.
+- Test utilities and fixtures enforce all safety; `config.py` is environment-agnostic and never contains test-specific logic.
+- The `DB_NAME` variable is used for all environments; when running tests, it must point to a dedicated test database.
+- Prevents accidental modification of production databases.
+- `.env` files are ignored by git.
 
 ## Concurrency Testing
 

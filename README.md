@@ -35,14 +35,14 @@ pytest
 pytest tests/test_database.py::test_create_key_value
 ```
 
-**Features:**
-- Automatic pytest detection for test database selection
-- Dual-database safety architecture (DB_NAME vs DB_NAME_TEST)
-- Database name validation (prevents production accidents)
-- Clean database sessions for each test
-- Comprehensive CRUD, isolation, and concurrency testing
+**Testing & Safety Features:**
+- All environment selection is handled via environment variables (see `.env` and `ENVIRONMENT_SETUP.md`).
+- The main configuration (`config.py`) is environment-agnostic and reads only from environment variables.
+- All test safety and destructive operations are enforced in test utilities and entry points (e.g., `conftest.py`, `database_utils.py`).
+- Destructive test operations (e.g., dropping/creating databases) are strictly gated by `APP_ENV=test` and will fail if not in test mode.
+- Clean database sessions for each test, robust CRUD, isolation, and concurrency testing.
 
-See [ENVIRONMENT_SETUP.md](ENVIRONMENT_SETUP.md) for configuration.
+See [ENVIRONMENT_SETUP.md](ENVIRONMENT_SETUP.md) for configuration and environment variable details.
 
 ---
 

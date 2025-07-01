@@ -12,7 +12,7 @@ from app.main import app
 # --- Basic API functionality tests ---
 
 @pytest.mark.asyncio
-async def test_set_user_value():
+async def test_set_user_value(clean_db):
     """Test setting a user value via API."""
     async with AsyncClient(app=app, base_url="http://test") as client:
         response = await client.post(
@@ -25,7 +25,7 @@ async def test_set_user_value():
 
 
 @pytest.mark.asyncio
-async def test_get_user_value():
+async def test_get_user_value(clean_db):
     """Test getting a user value via API."""
     async with AsyncClient(app=app, base_url="http://test") as client:
         # First set a value
@@ -44,7 +44,7 @@ async def test_get_user_value():
 
 
 @pytest.mark.asyncio
-async def test_get_nonexistent_key():
+async def test_get_nonexistent_key(clean_db):
     """Test getting a key that doesn't exist."""
     async with AsyncClient(app=app, base_url="http://test") as client:
         response = await client.get("/user/dict/nonexistent_key")
@@ -56,7 +56,7 @@ async def test_get_nonexistent_key():
 
 
 @pytest.mark.asyncio
-async def test_update_existing_key():
+async def test_update_existing_key(clean_db):
     """Test updating an existing key via API."""
     async with AsyncClient(app=app, base_url="http://test") as client:
         # Set initial value
@@ -85,7 +85,7 @@ async def test_update_existing_key():
 # --- Concurrency and load testing ---
 
 @pytest.mark.asyncio
-async def test_concurrent_sets():
+async def test_concurrent_sets(clean_db):
     """Test concurrent setting of different keys."""
     async with AsyncClient(app=app, base_url="http://test") as client:
         # Create multiple concurrent requests
@@ -117,7 +117,7 @@ async def test_concurrent_sets():
 
 
 @pytest.mark.asyncio
-async def test_concurrent_gets():
+async def test_concurrent_gets(clean_db):
     """Test concurrent getting of the same key."""
     async with AsyncClient(app=app, base_url="http://test") as client:
         # Set a value first
@@ -143,7 +143,7 @@ async def test_concurrent_gets():
 
 
 @pytest.mark.asyncio
-async def test_concurrent_set_get_race_condition():
+async def test_concurrent_set_get_race_condition(clean_db):
     """Test race condition between set and get operations."""
     async with AsyncClient(app=app, base_url="http://test") as client:
         # Create a race condition: set and get the same key concurrently
@@ -177,7 +177,7 @@ async def test_concurrent_set_get_race_condition():
 
 
 @pytest.mark.asyncio
-async def test_high_load_concurrent_operations():
+async def test_high_load_concurrent_operations(clean_db):
     """Test high load with mixed set/get operations."""
     async with AsyncClient(app=app, base_url="http://test") as client:
         # Create a mix of set and get operations
@@ -211,7 +211,7 @@ async def test_high_load_concurrent_operations():
 
 
 @pytest.mark.asyncio
-async def test_concurrent_updates_same_key():
+async def test_concurrent_updates_same_key(clean_db):
     """Test concurrent updates to the same key."""
     async with AsyncClient(app=app, base_url="http://test") as client:
         # Set initial value
@@ -249,7 +249,7 @@ async def test_concurrent_updates_same_key():
 
 
 @pytest.mark.asyncio
-async def test_error_handling_invalid_json():
+async def test_error_handling_invalid_json(clean_db):
     """Test error handling for invalid JSON."""
     async with AsyncClient(app=app, base_url="http://test") as client:
         response = await client.post(
@@ -263,7 +263,7 @@ async def test_error_handling_invalid_json():
 
 
 @pytest.mark.asyncio
-async def test_error_handling_missing_fields():
+async def test_error_handling_missing_fields(clean_db):
     """Test error handling for missing required fields."""
     async with AsyncClient(app=app, base_url="http://test") as client:
         response = await client.post(
