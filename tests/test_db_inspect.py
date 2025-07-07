@@ -1,9 +1,17 @@
+"""
+Database inspection test for the Quest of Life Backend API.
+Inspects all databases and tables on the server and logs their structure and size.
+"""
 import pytest
 from sqlalchemy import text, create_engine
 from app.database.config import SYNC_SERVER_URL
 from datetime import datetime
 
-def test_inspect_all_databases(test_database):
+def test_inspect_all_databases(test_database) -> None:
+    """
+    Inspects all databases and their tables, printing and logging their structure and size.
+    Used for manual inspection and debugging of the test database environment.
+    """
     log_lines = []
     timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     log_lines.append(f"Database Inspection Log - {timestamp}\n")

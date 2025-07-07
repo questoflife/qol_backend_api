@@ -1,60 +1,87 @@
 # Quest of Life Backend API
 
-Async Python/FastAPI service that powers the Quest of Life website.  
-Runs on **Northflank**; the static front-end lives on GitHub Pages.
-
-## Backend Functionality
-- User key-value storage with user isolation
-- Authentication via Discord OAuth2 for api calls (currently mocked for development)
-
+Async FastAPI backend for the Quest of Life website. Provides user key-value storage with user isolation and (mocked) Discord OAuth2 authentication. Runs on Northflank; static frontend is on GitHub Pages.
 
 ---
 
-## Tech stack
+## Quick Start
 
-| Layer             | Choice |
-| ----------------- | ------ |
-| Language          | Python 3.12 |
-| Web framework     | FastAPI (async) |
-| ASGI server       | Uvicorn |
-| ORM / DB driver   | SQLAlchemy 2 (async) |
-| Database          | MySQL 8 (Northflank add-on) |
-| Dependency mgr    | Poetry |
-| Container         | Podman |
-| CI / CD           | GitHub Actions → Northflank Pipeline |
+1. **Set up your `.env` file:**
+   ```env
+   APP_ENV=dev         # Use 'test' for running tests
+   DB_USER=your_user
+   DB_PASSWORD=your_password
+   DB_HOST=your_host
+   DB_PORT=3306
+   DB_NAME=your_database  # Use a test DB for tests
+   ```
+2. **Install dependencies:**
+   ```bash
+   poetry install
+   ```
+3. **Run the app:**
+   ```bash
+   python -m app.main
+   ```
+
+**Safety:**
+- Destructive operations (e.g., dropping/creating DBs) are only allowed if `APP_ENV=test` and `DB_NAME` points to a test database. This prevents accidental changes to production data.
+- `.env` files are git-ignored.
+
+---
+
+## Architecture
+
+```
+[API Layer] → [Service/Backend Layer] → [Repository/Database Layer]
+```
+
+- **API Layer (`app/api/`)**  
+  Handles HTTP requests and responses. Depends on the service/backend layer for business logic.
+
+- **Service/Backend Layer (`app/backend/`)**  
+  Contains business logic, orchestration, and validation. Calls repository/database functions to access or modify data.
+
+- **Repository/Database Layer (`app/database/`)**  
+  Handles direct database access (CRUD operations, queries). No business logic.
+
+**Example Flow:**
+1. API receives a request (e.g., set a user value).
+2. API calls the service layer function (e.g., `set_user_key_value`).
+3. Service layer may add business logic, then calls the repository function.
+4. Repository function interacts with the database.
+
+---
+
+## Tech Stack
+
+| Layer           | Choice                |
+| --------------- | --------------------- |
+| Language        | Python 3.12           |
+| Web framework   | FastAPI (async)       |
+| ASGI server     | Uvicorn               |
+| ORM / DB driver | SQLAlchemy 2 (async)  |
+| Database        | MySQL 8               |
+| Dependency mgr  | Poetry                |
+| Container       | Podman                |
+| CI / CD         | GitHub Actions, Northflank |
 
 ---
 
 ## Testing
 
-```bash
-# Run tests
-pytest
+> **⚠️ Never run tests against your production or development database.**
+> 
+> Before running tests, ensure your `.env` is configured for testing:
+> - `APP_ENV=test`
+> - `DB_NAME` points to a dedicated test database (e.g., `qol_test`)
+> 
+> All destructive test operations are strictly gated by these settings, but you must double-check your `.env` to avoid catastrophic data loss.
 
-# Run specific test
-pytest tests/test_database.py::test_create_key_value
-```
+**How to run tests safely:**
+1. Create a `.env` file for testing (or temporarily modify your existing one)
+2. Run tests:
+   ```bash
+   pytest
+   ```
 
-**Testing & Safety Features:**
-- All environment selection is handled via environment variables (see `.env` and `ENVIRONMENT_SETUP.md`).
-- The main configuration (`config.py`) is environment-agnostic and reads only from environment variables.
-- All test safety and destructive operations are enforced in test utilities and entry points (e.g., `conftest.py`, `database_utils.py`).
-- Destructive test operations (e.g., dropping/creating databases) are strictly gated by `APP_ENV=test` and will fail if not in test mode.
-- Clean database sessions for each test, robust CRUD, isolation, and concurrency testing.
-
-See [ENVIRONMENT_SETUP.md](ENVIRONMENT_SETUP.md) for configuration and environment variable details.
-
----
-
-## Northflank deployment (free tier)
-
-| Role            | Resource name | Plan             |
-| --------------- | ------------- | ---------------- |
-| **Live API**    | `api-prod`    | `nf-compute-10` (256 MB) |
-| **Staging API** | `api-dev` *¹* | `nf-compute-10` (256 MB) |
-| **Database**    | `mysql-qol`   | `nf-compute-20` (512 MB) + 4 GB disk |
-
-> *¹ `api-dev` can be scaled to 0 replicas when you're not actively testing to save costs*
-
-* Only **two** long-running services are allowed on the Developer Sandbox—`api-prod` and `api-dev` use both slots.  
-* There is **one** managed add-on (MySQL). **Both services share it, so never run destructive migrations on `api-dev` that could affect prod data.**

@@ -12,14 +12,25 @@ from sqlalchemy import text, create_engine
 import os
 from app.database.config import DB_NAME, SYNC_SERVER_URL, create_app_async_engine, create_app_async_session_factory
 
+def _ensure_test_environment():
+    """
+    Ensures that the environment is safe for destructive test operations.
+    Checks that APP_ENV is 'test' and DB_NAME contains 'test'.
+    Raises RuntimeError if not safe.
+    """
+    app_env = os.environ.get("APP_ENV")
+    if app_env != "test":
+        raise RuntimeError("Operation can only be run with APP_ENV=test!")
+    if "test" not in DB_NAME.lower():
+        raise RuntimeError(f"Operation can only be run if DB_NAME contains 'test' (got DB_NAME={DB_NAME})!")
+
 def destructive_recreate_database_and_tables() -> None:
     """
     DANGEROUS: Drops and recreates the test database, then creates all tables.
     Only use in test environments! This is destructive and should never be used outside of APP_ENV=test.
     Only works if the database is completely empty after recreation.
     """
-    if os.environ.get("APP_ENV") != "test":
-        raise RuntimeError("destructive_recreate_database_and_tables can only be run with APP_ENV=test!")
+    _ensure_test_environment()
     # Use server_engine for operations without a DB selected
     server_engine = create_engine(SYNC_SERVER_URL, echo=False)
     with server_engine.connect() as conn:
@@ -42,8 +53,7 @@ def destructive_drop_test_database() -> None:
     This is destructive and should never be used outside of APP_ENV=test.
     Disposes of the db_engine before dropping the database to avoid zombie connections.
     """
-    if os.environ.get("APP_ENV") != "test":
-        raise RuntimeError("destructive_drop_test_database can only be run with APP_ENV=test!")
+    _ensure_test_environment()
     server_engine = create_engine(SYNC_SERVER_URL, echo=False)
     with server_engine.connect() as conn:
         conn.execute(text(f"DROP DATABASE IF EXISTS `{DB_NAME}`"))
@@ -63,8 +73,7 @@ def create_pytest_engine_and_session_factory():
             ...
         await engine.dispose()
     """
-    if os.getenv("APP_ENV") != "test":
-        raise RuntimeError("create_pytest_engine_and_session_factory can only be used with APP_ENV=test!")
+    _ensure_test_environment()
     engine = create_app_async_engine()
     session_factory = create_app_async_session_factory(engine)
     return engine, session_factory 

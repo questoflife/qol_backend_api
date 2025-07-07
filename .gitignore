@@ -7,3 +7,7 @@ __pycache__/
 .env.*
 
 db_inspect.log
+
+# Test and editor cache
+.pytest_cache/
+.vscode/
