@@ -4,16 +4,53 @@ Async FastAPI backend for the Quest of Life website. Provides user key-value sto
 
 ---
 
+## Prerequisites
+
+Before you begin, make sure you have the following:
+
+1. **Python 3.12**
+   - Download from: https://www.python.org/downloads/release/python-3120/
+   - Check installation:
+     ```bash
+     python --version
+     # Should print 3.12.x
+     ```
+
+2. **Poetry** (dependency manager)
+   - Install (Unix/macOS):
+     ```bash
+     curl -sSL https://install.python-poetry.org | python3 -
+     ```
+   - Install (Windows PowerShell):
+     ```powershell
+     (Invoke-WebRequest -Uri https://install.python-poetry.org -UseBasicParsing).Content | python -
+     ```
+   - Check installation:
+     ```bash
+     poetry --version
+     ```
+
+3. **MySQL 8** (database server)
+   - You need a running MySQL 8+ server.
+   - **Quick start with Docker:**
+     ```bash
+     docker run --name qol-mysql -e MYSQL_ROOT_PASSWORD=rootpw -p 3306:3306 -d mysql:8.4
+     ```
+   - This starts MySQL 8.4 on port 3306 with user `root` and password `rootpw`.
+   - Connect using: host `localhost`, port `3306`, user `root`, password `rootpw`.
+
+---
+
 ## Quick Start
 
-1. **Set up your `.env` file:**
+1. **Set up your `.env` file (must point to your MySQL database):**
    ```env
-   APP_ENV=dev         # Use 'test' for running tests
-   DB_USER=your_user
-   DB_PASSWORD=your_password
-   DB_HOST=your_host
+   APP_ENV=test         # Use 'test' for running tests, 'prod' for deployment
+   DB_USER=root
+   DB_PASSWORD=rootpw
+   DB_HOST=localhost
    DB_PORT=3306
-   DB_NAME=your_database  # Use a test DB for tests
+   DB_NAME=qol_db_test  # Use a test DB for tests
    ```
 2. **Install dependencies:**
    ```bash
