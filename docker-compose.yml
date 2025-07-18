@@ -1,0 +1,27 @@
+version: '3.9'
+services:
+  app:
+    build:
+      context: .
+      args:
+        - PACKAGES=${PACKAGES:-prod}
+    env_file: .env
+    environment:
+      RUN_MAIN: ${RUN_MAIN:-1}   # Set to 1 to run the app
+      RUN_TESTS: ${RUN_TESTS:-0} # Set to 1 to run tests
+    depends_on:
+      - db
+    profiles: ["app"]
+    # To run tests only: RUN_MAIN=0 RUN_TESTS=1 docker compose up --profile app
+    # To run both: RUN_MAIN=1 RUN_TESTS=1 docker compose up --profile app
+    # To run app only: RUN_MAIN=1 RUN_TESTS=0 docker compose up --profile app
+
+  db:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpw
+      MYSQL_DATABASE: qol_db_test
+    ports:
+      - "3306:3306"
+    profiles: ["db"]
+    # To include the db: docker compose up --profile db --profile app 
