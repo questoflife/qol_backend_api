@@ -1,27 +1,66 @@
 version: '3.9'
+
+# YAML anchors to reduce duplication
+x-mysql-config: &mysql-config
+  MYSQL_ROOT_PASSWORD: rootpw
+  MYSQL_DATABASE: qol_db_test
+  MYSQL_USER: qol_user
+  MYSQL_PASSWORD: qol_pw
+
+x-db-env: &db-env
+  DB_HOST: db
+  DB_PORT: 3306
+  DB_NAME: qol_db_test
+  DB_USER: qol_user
+  DB_PASSWORD: qol_pw
+
 services:
-  app:
+  # Production app
+  prod:
+    env_file: .env
     build:
       context: .
-      args:
-        - PACKAGES=${PACKAGES:-prod}
+      target: prod
+    profiles: ["prod"]
+
+  # Testing app
+  test:
     env_file: .env
+    build:
+      context: .
+      target: testing
+    profiles: ["test"]
+
+  # Development app (standalone)
+  dev:
+    env_file: .env
+    build:
+      context: .
+      target: dev
+    profiles: ["dev"]
+
+  # Development with database
+  dev-db:
+    env_file: .env
+    build:
+      context: .
+      target: dev
     environment:
-      RUN_MAIN: ${RUN_MAIN:-1}   # Set to 1 to run the app
-      RUN_TESTS: ${RUN_TESTS:-0} # Set to 1 to run tests
+      <<: *db-env
     depends_on:
       - db
-    profiles: ["app"]
-    # To run tests only: RUN_MAIN=0 RUN_TESTS=1 docker compose up --profile app
-    # To run both: RUN_MAIN=1 RUN_TESTS=1 docker compose up --profile app
-    # To run app only: RUN_MAIN=1 RUN_TESTS=0 docker compose up --profile app
+    profiles: ["dev-db"]
 
   db:
     image: mysql:8.4
     environment:
-      MYSQL_ROOT_PASSWORD: rootpw
-      MYSQL_DATABASE: qol_db_test
+      <<: *mysql-config
     ports:
       - "3306:3306"
     profiles: ["db"]
-    # To include the db: docker compose up --profile db --profile app 
+
+# Usage examples:
+# Production: docker compose --profile prod up --build
+# Testing: docker compose --profile test up --build
+# Development: docker compose --profile dev up --build
+# Development with DB: docker compose --profile dev-db --profile db up --build

@@ -3,7 +3,7 @@ Service layer for user key-value operations in the Quest of Life Backend API.
 Provides async functions to fetch and set user values using the repository layer.
 """
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.database.repository import (
+from src.database.repository import (
     get_user_key_value as database_get_user_key_value,
     set_user_key_value as database_set_user_key_value,
 )

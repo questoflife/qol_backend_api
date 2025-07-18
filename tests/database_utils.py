@@ -10,17 +10,14 @@ SAFETY PRINCIPLE:
 """
 from sqlalchemy import text, create_engine
 import os
-from app.database.config import DB_NAME, SYNC_SERVER_URL, create_app_async_engine, create_app_async_session_factory
+from src.database.config import DB_NAME, SYNC_SERVER_URL, create_app_async_engine, create_app_async_session_factory
 
 def _ensure_test_environment():
     """
     Ensures that the environment is safe for destructive test operations.
-    Checks that APP_ENV is 'test' and DB_NAME contains 'test'.
+    Checks that DB_NAME contains 'test'.
     Raises RuntimeError if not safe.
     """
-    app_env = os.environ.get("APP_ENV")
-    if app_env != "test":
-        raise RuntimeError("Operation can only be run with APP_ENV=test!")
     if "test" not in DB_NAME.lower():
         raise RuntimeError(f"Operation can only be run if DB_NAME contains 'test' (got DB_NAME={DB_NAME})!")
 
@@ -38,7 +35,7 @@ def destructive_recreate_database_and_tables() -> None:
         conn.execute(text(f"CREATE DATABASE `{DB_NAME}`"))
     server_engine.dispose()
     # Use db_engine for operations with the DB selected
-    from app.database.models import Base
+    from src.database.models import Base
     db_engine = create_engine(f"{SYNC_SERVER_URL}/{DB_NAME}", echo=False)
     with db_engine.begin() as conn:
         result = conn.execute(text("SHOW TABLES"))

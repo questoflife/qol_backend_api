@@ -4,7 +4,7 @@ Inspects all databases and tables on the server and logs their structure and siz
 """
 import pytest
 from sqlalchemy import text, create_engine
-from app.database.config import SYNC_SERVER_URL
+from src.database.config import SYNC_SERVER_URL
 from datetime import datetime
 
 def test_inspect_all_databases(test_database) -> None:

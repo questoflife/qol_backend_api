@@ -2,9 +2,8 @@
 __pycache__/
 *.pyc
 
-# dotenv environment variables
 .env
-.env.*
+*.env
 
 # Test and editor cache
 .pytest_cache/
