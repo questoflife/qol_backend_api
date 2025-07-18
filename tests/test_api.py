@@ -4,7 +4,7 @@ Tests FastAPI endpoints and concurrency handling.
 """
 import asyncio
 import pytest
-from httpx import AsyncClient
+from httpx import AsyncClient, ASGITransport
 
 from app.main import app
 
@@ -14,7 +14,7 @@ from app.main import app
 @pytest.mark.asyncio
 async def test_set_user_value(clean_db_override_app_session):
     """Test setting a user value via API."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         response = await client.post(
             "/user/dict",
             json={"key": "theme", "value": "dark"}
@@ -27,7 +27,7 @@ async def test_set_user_value(clean_db_override_app_session):
 @pytest.mark.asyncio
 async def test_get_user_value(clean_db_override_app_session):
     """Test getting a user value via API."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         # First set a value
         await client.post(
             "/user/dict",
@@ -46,7 +46,7 @@ async def test_get_user_value(clean_db_override_app_session):
 @pytest.mark.asyncio
 async def test_get_nonexistent_key(clean_db_override_app_session):
     """Test getting a key that doesn't exist."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         response = await client.get("/user/dict/nonexistent_key")
         
         assert response.status_code == 200
@@ -58,7 +58,7 @@ async def test_get_nonexistent_key(clean_db_override_app_session):
 @pytest.mark.asyncio
 async def test_update_existing_key(clean_db_override_app_session):
     """Test updating an existing key via API."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         # Set initial value
         await client.post(
             "/user/dict",
@@ -87,7 +87,7 @@ async def test_update_existing_key(clean_db_override_app_session):
 @pytest.mark.asyncio
 async def test_concurrent_sets(clean_db_override_app_session):
     """Test concurrent setting of different keys."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         # Create multiple concurrent requests
         async def set_key(key: str, value: str):
             response = await client.post(
@@ -119,7 +119,7 @@ async def test_concurrent_sets(clean_db_override_app_session):
 @pytest.mark.asyncio
 async def test_concurrent_gets(clean_db_override_app_session):
     """Test concurrent getting of the same key."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         # Set a value first
         await client.post(
             "/user/dict",
@@ -145,7 +145,7 @@ async def test_concurrent_gets(clean_db_override_app_session):
 @pytest.mark.asyncio
 async def test_concurrent_set_get_race_condition(clean_db_override_app_session):
     """Test race condition between set and get operations."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         # Create a race condition: set and get the same key concurrently
         async def set_key():
             response = await client.post(
@@ -179,7 +179,7 @@ async def test_concurrent_set_get_race_condition(clean_db_override_app_session):
 @pytest.mark.asyncio
 async def test_high_load_concurrent_operations(clean_db_override_app_session):
     """Test high load with mixed set/get operations."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         # Create a mix of set and get operations
         async def set_operation(i: int):
             response = await client.post(
@@ -213,7 +213,7 @@ async def test_high_load_concurrent_operations(clean_db_override_app_session):
 @pytest.mark.asyncio
 async def test_concurrent_updates_same_key(clean_db_override_app_session):
     """Test concurrent updates to the same key."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         # Set initial value
         await client.post(
             "/user/dict",
@@ -251,7 +251,7 @@ async def test_concurrent_updates_same_key(clean_db_override_app_session):
 @pytest.mark.asyncio
 async def test_error_handling_invalid_json(clean_db_override_app_session):
     """Test error handling for invalid JSON."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         response = await client.post(
             "/user/dict",
             content="invalid json",
@@ -265,7 +265,7 @@ async def test_error_handling_invalid_json(clean_db_override_app_session):
 @pytest.mark.asyncio
 async def test_error_handling_missing_fields(clean_db_override_app_session):
     """Test error handling for missing required fields."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         response = await client.post(
             "/user/dict",
             json={"key": "test"}  # Missing "value" field
