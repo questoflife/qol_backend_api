@@ -1,0 +1,14 @@
+# Python cache
+__pycache__/
+*.pyc
+
+# dotenv environment variables
+.env
+.env.*
+
+# Test and editor cache
+.pytest_cache/
+.vscode/
+
+# Logs
+db_inspect.log
