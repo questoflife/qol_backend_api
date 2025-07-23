@@ -1,0 +1,5 @@
+# List of build-time apt packages needed for Python package installation in python-dev-packages.txt
+# Copy this file to apt-build-packages.txt and customize
+# These packages are used ONLY during the build stage for compiling/installing Python packages
+
+# Add your own development tools below that are required by your own python-dev-packages.txt

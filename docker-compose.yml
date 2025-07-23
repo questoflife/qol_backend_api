@@ -1,66 +1,116 @@
-version: '3.9'
+# Docker Compose configuration for QoL Backend API
 
-# YAML anchors to reduce duplication
-x-mysql-config: &mysql-config
-  MYSQL_ROOT_PASSWORD: rootpw
-  MYSQL_DATABASE: qol_db_test
-  MYSQL_USER: qol_user
-  MYSQL_PASSWORD: qol_pw
-
-x-db-env: &db-env
-  DB_HOST: db
-  DB_PORT: 3306
-  DB_NAME: qol_db_test
-  DB_USER: qol_user
-  DB_PASSWORD: qol_pw
+# Common service configuration used by all services
+x-service-common: &service-common
+  env_file:
+    # Base application configuration (optional)
+    - path: config/app.env
+      required: false
 
 services:
-  # Production app
+  #################################################################
+  ## PRODUCTION
+  #################################################################
   prod:
-    env_file: .env
+    <<: *service-common
     build:
       context: .
       target: prod
-    profiles: ["prod"]
 
-  # Testing app
-  test:
-    env_file: .env
+  #################################################################
+  ## TESTING
+  #################################################################
+  # Testing app (standalone)
+  testing:
+    <<: *service-common
     build:
       context: .
       target: testing
-    profiles: ["test"]
 
-  # Development app (standalone)
-  dev:
-    env_file: .env
+  # Testing app with database
+  testing-db:
+    <<: *service-common
     build:
       context: .
-      target: dev
-    profiles: ["dev"]
-
-  # Development with database
-  dev-db:
-    env_file: .env
-    build:
-      context: .
-      target: dev
-    environment:
-      <<: *db-env
+      target: testing
+    env_file:
+      # Database environment configuration (required)
+      - path: config/db.env
+        required: true
     depends_on:
       - db
-    profiles: ["dev-db"]
 
+  #################################################################
+  ## DEVELOPMENT
+  #################################################################
+  # Development app (standalone)
+  dev:
+    <<: *service-common
+    build:
+      context: .
+      target: dev
+    env_file:
+      # Developer-specific environment overrides (optional)
+      - path: config/dev.env
+        required: false
+    volumes:
+      # Mount the current directory to /qol_backend_api for live development
+      - .:/qol_backend_api
+
+  # Development app with database
+  dev-db:
+    <<: *service-common
+    build:
+      context: .
+      target: dev
+    env_file:
+      # Database environment configuration (required)
+      - path: config/db.env
+        required: true
+      # Developer-specific environment overrides (optional)
+      - path: config/dev.env
+        required: false
+    volumes:
+      # Mount the current directory to /qol_backend_api for live development
+      - .:/qol_backend_api
+    depends_on:
+      - db
+      
+  #################################################################
+  ## DATABASE
+  #################################################################
+  # Shared database for both development and testing
   db:
     image: mysql:8.4
-    environment:
-      <<: *mysql-config
+    env_file:
+      # Database environment configuration (required)
+      - path: config/db.env
+        required: true
     ports:
       - "3306:3306"
-    profiles: ["db"]
 
-# Usage examples:
-# Production: docker compose --profile prod up --build
-# Testing: docker compose --profile test up --build
-# Development: docker compose --profile dev up --build
-# Development with DB: docker compose --profile dev-db --profile db up --build
+#################################################################
+## USAGE GUIDE
+#################################################################
+#
+# Run commands:
+#   Production:       docker compose up --build prod
+#   Testing:          docker compose run --build --rm testing
+#   Testing with DB:  docker compose run --build --rm testing-db
+#   Development:      docker compose up --build dev
+#   Dev with DB:      docker compose up --build dev-db
+#
+# Configuration Files:
+#   config/app.env  - Application settings (optional, used by all services)
+#   config/db.env   - Database settings (REQUIRED for database services)
+#   config/dev.env  - Developer overrides (optional, only for dev services)
+#
+# Environment File Precedence (later files override earlier ones):
+#   1. config/app.env (loaded first via x-service-common)
+#   2. config/db.env (loaded in database services)
+#   3. config/dev.env (loaded last in development services for highest priority)
+#
+# Developer Tools:
+#   config/apt-build-packages.txt     - Build dependencies for Python packages
+#   config/apt-runtime-packages.txt   - Interactive development tools
+#   config/python-dev-packages.txt    - Custom Python packages for dev container

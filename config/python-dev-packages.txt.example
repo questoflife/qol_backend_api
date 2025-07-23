@@ -1,0 +1,13 @@
+# Python development packages
+# Copy this file to python-dev-packages.txt and customize
+# Each line should contain a single package with optional version specifier
+# Lines starting with # are comments and will be ignored
+
+# Core development tools (recommended for all developers)
+ipython==9.3.0
+debugpy==1.8.15
+pylint==3.0.0
+mypy==1.8.0
+ruff==0.12.4
+
+# Add your own preferred development packages below

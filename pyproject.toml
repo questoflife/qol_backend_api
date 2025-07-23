@@ -18,12 +18,8 @@ cryptography = "^45.0.5"
 pytest = "^8.0.0"
 pytest-asyncio = "^1.1.0"
 
-[tool.poetry.group.dev.dependencies]
-ipython = "^9.3.0"
-debugpy = "^1.8.15"
-pylint = "^3.0.0"
-mypy = "^1.8.0"
-ruff = "^0.12.4"
+# Development dependencies are managed through .devpackages
+# See docs/DEVELOPER_CONFIG.md for details
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

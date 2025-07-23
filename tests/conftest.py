@@ -7,7 +7,7 @@ import os
 from src.database.models import Base
 from tests.database_utils import destructive_recreate_database_and_tables, destructive_drop_test_database, create_pytest_engine_and_session_factory, _ensure_test_environment
 from src.database.config import get_app_async_session
-from src.main import app
+from src.app import app
 
 # Ensure tests are only run in the test environment
 _ensure_test_environment()

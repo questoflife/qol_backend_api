@@ -1,12 +1,20 @@
-# Python cache
+# Python
 __pycache__/
 *.pyc
-
-.env
-*.env
-
-# Test and editor cache
 .pytest_cache/
+
+# Environment files
+.env
+
+# Developer configuration
+config/app.env
+config/db.env
+config/dev.env
+config/python-dev-packages.txt
+config/apt-build-packages.txt
+config/apt-runtime-packages.txt
+
+# IDE settings
 .vscode/
 
 # Logs

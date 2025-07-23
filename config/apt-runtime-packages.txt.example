@@ -1,0 +1,6 @@
+# List of interactive development tools to install in the dev container
+# Copy this file to apt-runtime-packages.txt and customize
+# These are runtime tools for interactive development (not build dependencies)
+# Each package should be on a separate line
+
+# Add your preferred development tools below

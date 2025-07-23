@@ -105,6 +105,21 @@ Before you begin, make sure you have the following:
 
 ---
 
+## Developer Configuration
+
+This project supports developer-specific configurations that won't affect other team members:
+
+1. **Application Settings**: Create `config/app.env` from `config/app.env.example` (optional)
+2. **Database Settings**: Create `config/db.env` from `config/db.env.example` (required for database profiles)
+3. **Developer Overrides**: Create `config/dev.env` from `config/dev.env.example` (optional)
+4. **Build Dependencies**: Create `config/apt-build-packages.txt` from `config/apt-build-packages.txt.example` (optional)
+5. **Runtime Tools**: Create `config/apt-runtime-packages.txt` from `config/apt-runtime-packages.txt.example` (optional)
+6. **Python Packages**: Create `config/python-dev-packages.txt` from `config/python-dev-packages.txt.example` (optional)
+
+All these files are gitignored for your personal configuration.
+
+See [Developer Configuration Guide](./docs/DEVELOPER_CONFIG.md) for detailed instructions.
+
 ## Testing
 
 > **⚠️ Never run tests against your production or development database.**
@@ -121,4 +136,55 @@ Before you begin, make sure you have the following:
    ```bash
    pytest
    ```
+
+## Docker Development
+
+This project includes a multi-stage Dockerfile that supports different development scenarios:
+
+### Docker Image Types
+
+1. **Production (`prod`)**: Minimal image with only production dependencies
+2. **Testing (`testing`)**: Image with test dependencies for running automated tests
+3. **Development (`dev`)**: Customizable development environment with developer tools
+
+### Using Development Docker Environment
+
+To create a customized development environment:
+
+1. **Configure your development packages**:
+   - Copy `.devpackages.example` to `.devpackages` and uncomment/add the Python packages you need
+   - Copy `.dev-apt-build-packages.example` to `.dev-apt-build-packages` for build-time dependencies
+   - Copy `.dev-apt-runtime-packages.example` to `.dev-apt-runtime-packages` for runtime development tools
+
+2. **Build and run the development container**:
+   ```bash
+   # Build development image with your custom packages
+   docker build -t qol-backend-dev --target dev .
+
+   # Run container with local code mounted
+   docker run -it --name qol-dev -p 8080:8080 -v $(pwd):/qol_backend_api qol-backend-dev
+   ```
+
+3. **Access the development environment**:
+   ```bash
+   # If your container is stopped, start it
+   docker start qol-dev
+
+   # Access a shell in the container
+   docker exec -it qol-dev bash
+   ```
+
+4. **Run the development server**:
+   ```bash
+   # Inside the container
+   python -m src.app
+   ```
+
+### Benefits of Docker Development
+
+- Consistent environment across all team members
+- Easy to add custom development tools without affecting the team
+- Isolated from your local system dependencies
+- Same environment as CI/CD pipelines for better testing
+- Quick reset by rebuilding the container
 
