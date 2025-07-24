@@ -6,6 +6,9 @@
 # These are runtime tools for interactive development (not build dependencies).
 
 # --- Default runtime packages ---
-git
+# git
+# docker-ce-cli
+# docker-buildx-plugin
+# docker-compose-plugin
 
 # --- Additional user-defined packages ---
