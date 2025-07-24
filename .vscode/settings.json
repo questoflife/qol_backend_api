@@ -1,0 +1,24 @@
+// This file contains the vscode setup.
+// The 'settings.json.example' version of this file is committed to the repository as a template.
+// This file ('settings.json') is a copy for local development and is ignored by Git.
+// You can safely modify this file with your local settings.
+
+{
+  // ——— Poetry ———                         //
+  // Where the Poetry CLI lives inside the container
+  "python.poetryPath": "/opt/poetry",      // change if needed
+
+  // ——— Interpreter ———                    //
+  // Use the venv Poetry already created for the project
+  "python.defaultInterpreterPath": "/venv/.venv/bin/python",
+
+  // Let the interpreter picker also scan /venv for any other venvs you create
+  "python.venvPath": "/venv",
+
+  // Speed things up in remote containers: scan only the workspace tree
+  "python.discovery.mode": "workspace",
+
+  // ── Integrated terminal ───────────────────────────────────────────
+  // Tell VS Code to use Bash for every new terminal in this container
+  "terminal.integrated.defaultProfile.linux": "bash",
+}

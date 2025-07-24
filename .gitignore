@@ -14,8 +14,8 @@ config/python-dev-packages.txt
 config/apt-build-packages.txt
 config/apt-runtime-packages.txt
 
-# IDE settings
-.vscode/
-
 # Logs
 db_inspect.log
+
+# VSCode
+.vscode/settings.json
