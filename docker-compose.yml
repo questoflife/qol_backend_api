@@ -49,13 +49,17 @@ services:
     build:
       context: .
       target: dev
+    # Fix file permission issues with bind mounts
+    user: "1000:1000"
+    working_dir: /qol_backend_api
+    init: true
     env_file:
       # Developer-specific environment overrides (optional)
       - path: config/dev.env
         required: false
     volumes:
       # Mount the current directory to /qol_backend_api for live development
-      - .:/qol_backend_api
+      - .:/qol_backend_api:cached
 
   # Development app with database
   dev-db:
@@ -63,6 +67,10 @@ services:
     build:
       context: .
       target: dev
+    # Fix file permission issues with bind mounts
+    user: "1000:1000"
+    working_dir: /qol_backend_api
+    init: true
     env_file:
       # Database environment configuration (required)
       - path: config/db.env
@@ -72,7 +80,7 @@ services:
         required: false
     volumes:
       # Mount the current directory to /qol_backend_api for live development
-      - .:/qol_backend_api
+      - .:/qol_backend_api:cached
     depends_on:
       - db
       

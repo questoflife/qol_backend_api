@@ -125,9 +125,16 @@ FROM testing-builder AS dev-builder
 COPY config/apt-build-packages.txt* /tmp/
 RUN if [ -f /tmp/apt-build-packages.txt ]; then \
         echo "Installing build dependencies from config/apt-build-packages.txt..."; \
-        apt-get update && \
-        apt-get install -y --no-install-recommends $(grep -v "^#" /tmp/apt-build-packages.txt | tr '\n' ' ') && \
-        rm -rf /var/lib/apt/lists/*; \
+        # Process packages more carefully to avoid empty strings
+        grep -v "^#" /tmp/apt-build-packages.txt | grep -v "^$" | sed 's/[[:space:]]*$//' > /tmp/filtered-packages.txt; \
+        if [ -s /tmp/filtered-packages.txt ]; then \
+            apt-get update && \
+            apt-get install -y --no-install-recommends $(cat /tmp/filtered-packages.txt | tr '\n' ' ') && \
+            rm -rf /var/lib/apt/lists/*; \
+        else \
+            echo "No packages found in apt-build-packages.txt (empty or only comments)."; \
+        fi; \
+        rm -f /tmp/filtered-packages.txt; \
     else \
         echo "No config/apt-build-packages.txt file found."; \
     fi
@@ -157,13 +164,20 @@ RUN --mount=type=cache,target=$POETRY_CACHE_DIR \
 # ---------------------------------------------------------------
 FROM runtime-base AS dev
 
-# Install interactive development tools from config/apt-runtime-packages.txt
+# Install custom development tools from config/apt-runtime-packages.txt
 COPY config/apt-runtime-packages.txt* /tmp/
 RUN if [ -f /tmp/apt-runtime-packages.txt ]; then \
         echo "Installing runtime packages from config/apt-runtime-packages.txt..."; \
-        apt-get update && \
-        apt-get install -y --no-install-recommends $(grep -v "^#" /tmp/apt-runtime-packages.txt | tr '\n' ' ') && \
-        rm -rf /var/lib/apt/lists/*; \
+        # Process packages more carefully to avoid empty strings
+        grep -v "^#" /tmp/apt-runtime-packages.txt | grep -v "^$" | sed 's/[[:space:]]*$//' > /tmp/filtered-packages.txt; \
+        if [ -s /tmp/filtered-packages.txt ]; then \
+            apt-get update && \
+            apt-get install -y --no-install-recommends $(cat /tmp/filtered-packages.txt | tr '\n' ' ') && \
+            rm -rf /var/lib/apt/lists/*; \
+        else \
+            echo "No packages found in apt-runtime-packages.txt (empty or only comments)."; \
+        fi; \
+        rm -f /tmp/filtered-packages.txt; \
     else \
         echo "No config/apt-runtime-packages.txt found. Create one from config/apt-runtime-packages.txt.example for custom tools."; \
     fi
