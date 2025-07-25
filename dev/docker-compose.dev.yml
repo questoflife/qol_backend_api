@@ -1,0 +1,62 @@
+# Docker Compose configuration for QoL Backend API - Development
+
+services:
+  #################################################################
+  ## BASE IMAGES FOR DEVELOPMENT
+  #################################################################
+  runtime-base:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      target: runtime-base
+    image: qol-backend-api:runtime-base
+
+  testing-builder:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      target: testing-builder
+    image: qol-backend-api:testing-builder
+
+  #################################################################
+  ## DEVELOPMENT
+  #################################################################
+  dev:
+    build:
+      context: ..
+      dockerfile: dev/Dockerfile.local.dev
+      target: dev
+    depends_on:
+      - testing-builder
+      - runtime-base
+    env_file:
+      # Load app.env first (base config)
+      - path: ../app.env
+        required: false
+      # Load dev.local.env second (higher priority, can override app.env)
+      - path: dev.local.env
+        required: false
+    # Fix file permission issues with bind mounts
+    user: "1000:1000"
+    working_dir: /qol_backend_api
+    init: true
+    volumes:
+      # Mount the current directory to /qol_backend_api for live development
+      - .:/qol_backend_api:cached
+
+#################################################################
+## USAGE GUIDE
+#################################################################
+#
+# Run commands:
+#   Development:      docker compose -f dev/docker-compose.dev.yml up --build dev
+#   Dev with DB:      docker compose -f dev/docker-compose.dev.yml -f dev/docker-compose.db-override.yml up --build dev
+#
+# Configuration Files:
+#   ../docker.env               - Docker build variables (committed to git)
+#   ../app.env                  - Application settings (optional, ignored by git)
+#   dev.local.env               - Developer overrides (optional, ignored by git)
+#
+# Dockerfiles:
+#   ../Dockerfile               - Base stages (runtime-base, testing-builder) built by this compose file
+#   Dockerfile.local.dev        - Development environment extending base stages (user customizable, ignored by git)

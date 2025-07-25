@@ -4,44 +4,31 @@
 	"name": "QoL Backend API Dev Container with DB",
 
 	// Update the 'dockerComposeFile' list if you have more compose files or use different names.
-	// The .devcontainer/docker-compose.yml file contains any overrides you need/want to make.
+	// These paths are relative to the .devcontainer directory
 	"dockerComposeFile": [
-		"../docker-compose.yml"
+		"../dev/docker-compose.dev.yml",
+		"../dev/docker-compose.dev.db-override.yml"
 	],
 
 	// The 'service' property is the name of the service for the container that VS Code should
 	// use. Update this value and .devcontainer/docker-compose.yml to the real service name.
-	"service": "dev-db",
-	// Start specific services in your Docker Compose config.
-	"runServices": ["dev-db"],
+	"service": "dev",
+
+	// Pre-build images in dependency order to ensure everything is available
+	"initializeCommand": "bash -c 'set -e; echo \"Building base images...\"; docker compose -f dev/docker-compose.dev.yml build runtime-base testing-builder; echo \"Base images built. Building all services...\"; docker compose -f dev/docker-compose.dev.yml -f dev/docker-compose.dev.db-override.yml build; echo \"All builds completed!\"'",
+
+	// Only start the dev service - db will start automatically due to depends_on
+	"runServices": ["dev"],
 
 	// The optional 'workspaceFolder' property is the path VS Code should open by default when
 	// connected. This is typically a file mount in .devcontainer/docker-compose.yml
 	"workspaceFolder": "/qol_backend_api",
 
-	// // Mount the Docker socket to allow the container to run Docker commands.
-	// // This is necessary for DooD
-	// // Note: This is a security risk as it gives the container full control over the host Docker daemon.
-	// // Use with caution and only if you trust the container's contents.
-	// // More info: https://aka.ms/vscode-remote/containers/docker-in-docker
-	// "mounts": [
-	// 	"source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
-	// ],
-	"features": {
-		"ghcr.io/devcontainers/features/docker-outside-of-docker:1": {
-			"moby": true,
-			"installDockerBuildx": true,
-			"installDockerComposeSwitch": true,
-			"version": "latest",
-			"dockerDashComposeVersion": "v2"
-		},
-		"ghcr.io/devcontainers/features/github-cli:1": {
-			"installDirectlyFromGitHubRelease": true,
-			"version": "latest"
-		},
-		"ghcr.io/devcontainers/features/python:1": {
-			"installTools": true,
-			"version": "latest"
-		}
-	}
+	// Essential mounts for Docker-out-of-Docker
+	"mounts": [
+		"source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
+	]
+
+	// NOTE: No remoteUser needed - user is already set in Dockerfile (USER appuser) 
+	// and docker-compose.yml (user: "1000:1000"). Adding remoteUser here is redundant.
 }

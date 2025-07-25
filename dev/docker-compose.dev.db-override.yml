@@ -1,0 +1,46 @@
+# Docker Compose database override - Adds database to development environment only
+
+services:
+  #################################################################
+  ## DEVELOPMENT WITH DATABASE
+  #################################################################
+  dev:
+    env_file:
+      # Inherit app.env from base
+      - path: ../app.env
+        required: false
+      # Inherit dev.local.env from dev compose (if using docker-compose.dev.yml)
+      - path: dev.local.env
+        required: false
+      # Add database configuration (highest priority)
+      - path: db.local.env
+        required: true
+    depends_on:
+      - db
+
+  #################################################################
+  ## DATABASE
+  #################################################################
+  db:
+    image: mysql:8.4
+    env_file:
+      - path: db.local.env
+        required: true
+    ports:
+      - "3306:3306"
+
+#################################################################
+## USAGE GUIDE
+#################################################################
+#
+# Run commands with database:
+#   Dev with DB:          docker compose -f dev/docker-compose.dev.yml -f dev/docker-compose.dev.db-override.yml up --build dev
+#
+# Configuration Files:
+#   dev/db.local.env            - Database settings (optional, ignored by git)
+#
+# Environment File Priority (later files override earlier ones):
+#   1. docker.env (Docker build variables)
+#   2. app.env (base application settings)
+#   3. dev/dev.local.env (development overrides, only when using dev/docker-compose.dev.yml)  
+#   4. dev/db.local.env (database settings, highest priority)

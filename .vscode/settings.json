@@ -1,7 +1,4 @@
-// This file contains the vscode setup.
-// The 'settings.json.example' version of this file is committed to the repository as a template.
-// This file ('settings.json') is a copy for local development and is ignored by Git.
-// You can safely modify this file with your local settings.
+// This file contains the vscode setup for inside the dev docker container.
 
 {
   // ——— Poetry ———                         //

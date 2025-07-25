@@ -5,14 +5,11 @@ __pycache__/
 
 # Environment files
 .env
+app.env
 
-# Developer configuration
-config/app.env
-config/db.env
-config/dev.env
-config/python-dev-packages.txt
-config/apt-build-packages.txt
-config/apt-runtime-packages.txt
+# Developer configuration (local files)
+dev/*.local.env
+dev/Dockerfile.local.dev
 
 # Logs
 db_inspect.log

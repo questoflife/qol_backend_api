@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.6
+# syntax=docker/dockerfile:1
 
 #################################################################
 ## Global build arguments
@@ -12,6 +12,7 @@ ARG APP_VENDOR="Quest of Life"
 #################################################################
 FROM python:3.12-slim as base-builder
 
+# Set Poetry environment variables
 ENV POETRY_VERSION=2.1.3 \
     POETRY_HOME=/opt/poetry \
     POETRY_NO_INTERACTION=1 \
@@ -67,7 +68,6 @@ RUN groupadd -g 1000 appuser && \
 FROM base-builder AS prod-builder
 RUN --mount=type=cache,target=$POETRY_CACHE_DIR poetry install --no-root --only main
 
-
 # ---------------------------------------------------------------
 FROM runtime-base AS prod
 # Copy virtual environment from builder stage
@@ -75,14 +75,14 @@ COPY --from=prod-builder --link /venv/.venv /venv/.venv
 # Copy only the application source code
 COPY src ./src
 
-# Switch to non-root user for security
-USER appuser
-
 # Add metadata labels
 LABEL org.opencontainers.image.title="${APP_NAME}" \
       org.opencontainers.image.description="${APP_NAME}" \
       org.opencontainers.image.vendor="${APP_VENDOR}" \
       org.opencontainers.image.version="${APP_VERSION}"
+
+# Switch to non-root user for security
+USER appuser
 
 ENTRYPOINT ["python", "-m", "uvicorn", "src.app:app", "--host", "0.0.0.0", "--port", "8000"]
 
@@ -91,7 +91,6 @@ ENTRYPOINT ["python", "-m", "uvicorn", "src.app:app", "--host", "0.0.0.0", "--po
 #################################################################
 FROM prod-builder AS testing-builder
 RUN --mount=type=cache,target=$POETRY_CACHE_DIR poetry install --no-root --with testing
-
 
 # ---------------------------------------------------------------
 FROM runtime-base AS testing
@@ -115,90 +114,3 @@ LABEL org.opencontainers.image.title="${APP_NAME} - Testing" \
 USER appuser
 
 CMD ["/usr/local/bin/startup_with_testing.sh"]
-
-#################################################################
-## DEVELOPMENT - Customizable environment for local development
-#################################################################
-FROM testing-builder AS dev-builder
-
-# Install custom build dependencies from config/apt-build-packages.txt
-COPY config/apt-build-packages.txt* /tmp/
-RUN if [ -f /tmp/apt-build-packages.txt ]; then \
-        echo "Installing build dependencies from config/apt-build-packages.txt..."; \
-        # Process packages more carefully to avoid empty strings
-        grep -v "^#" /tmp/apt-build-packages.txt | grep -v "^$" | sed 's/[[:space:]]*$//' > /tmp/filtered-packages.txt; \
-        if [ -s /tmp/filtered-packages.txt ]; then \
-            apt-get update && \
-            apt-get install -y --no-install-recommends $(cat /tmp/filtered-packages.txt | tr '\n' ' ') && \
-            rm -rf /var/lib/apt/lists/*; \
-        else \
-            echo "No packages found in apt-build-packages.txt (empty or only comments)."; \
-        fi; \
-        rm -f /tmp/filtered-packages.txt; \
-    else \
-        echo "No config/apt-build-packages.txt file found."; \
-    fi
-
-# Install custom Python packages from config/python-dev-packages.txt
-COPY config/python-dev-packages.txt* /tmp/
-RUN --mount=type=cache,target=$POETRY_CACHE_DIR \
-    if [ -f /tmp/python-dev-packages.txt ]; then \
-        # Create dev group if it doesn't exist yet
-        poetry group add dev || true; \
-        \
-        # Process and install packages
-        grep -v "^#" /tmp/python-dev-packages.txt | grep -v "^$" > /tmp/filtered-packages.txt; \
-        if [ -s /tmp/filtered-packages.txt ]; then \
-            echo "Installing Python development packages from config/python-dev-packages.txt..."; \
-            # Install packages one at a time, continuing if some fail
-            cat /tmp/filtered-packages.txt | xargs -r -L 1 poetry add --group=dev || true; \
-        else \
-            echo "No packages found in config/python-dev-packages.txt (empty or only comments)."; \
-        fi; \
-        rm /tmp/filtered-packages.txt; \
-    else \
-        echo "No config/python-dev-packages.txt found. Create one from config/python-dev-packages.txt.example for custom packages."; \
-    fi
-
-
-# ---------------------------------------------------------------
-FROM runtime-base AS dev
-
-# Install custom development tools from config/apt-runtime-packages.txt
-COPY config/apt-runtime-packages.txt* /tmp/
-RUN if [ -f /tmp/apt-runtime-packages.txt ]; then \
-        echo "Installing runtime packages from config/apt-runtime-packages.txt..."; \
-        # Process packages more carefully to avoid empty strings
-        grep -v "^#" /tmp/apt-runtime-packages.txt | grep -v "^$" | sed 's/[[:space:]]*$//' > /tmp/filtered-packages.txt; \
-        if [ -s /tmp/filtered-packages.txt ]; then \
-            apt-get update && \
-            apt-get install -y --no-install-recommends $(cat /tmp/filtered-packages.txt | tr '\n' ' ') && \
-            rm -rf /var/lib/apt/lists/*; \
-        else \
-            echo "No packages found in apt-runtime-packages.txt (empty or only comments)."; \
-        fi; \
-        rm -f /tmp/filtered-packages.txt; \
-    else \
-        echo "No config/apt-runtime-packages.txt found. Create one from config/apt-runtime-packages.txt.example for custom tools."; \
-    fi
-
-# Copy the Python virtual environment with all dependencies
-COPY --from=dev-builder --link /venv/.venv /venv/.venv
-
-# Set the working directory
-WORKDIR /qol_backend_api
-
-# Note: Project files will be mounted from host via volume bind mount
-# instead of being copied into the container
-
-# Add metadata labels
-LABEL org.opencontainers.image.title="${APP_NAME} - Development" \
-      org.opencontainers.image.description="${APP_NAME} - Development Environment" \
-      org.opencontainers.image.vendor="${APP_VENDOR}" \
-      org.opencontainers.image.version="${APP_VERSION}"
-
-# Switch to non-root user for security
-USER appuser
-
-# Keep container running for development
-CMD ["sleep", "infinity"]

@@ -4,19 +4,19 @@
         {
             "label": "Run Tests (testing-db container)",
             "type": "shell",
-            "command": "docker compose run --rm --build testing-db",
+            "command": "docker compose -f docker-compose.yml -f dev/docker-compose.prod.db-override.yml run --rm --build testing",
             "group": "test"
         },
         {
             "label": "Production Up",
             "type": "shell", 
-            "command": "docker compose up --build prod",
+            "command": "docker compose -f docker-compose.yml -f dev/docker-compose.prod.db-override.yml up --build prod",
             "group": "build"
         },
         {
             "label": "Production Down",
             "type": "shell",
-            "command": "docker compose stop prod && docker compose rm -f prod",
+            "command": "docker compose -f docker-compose.yml -f dev/docker-compose.prod.db-override.yml stop prod && docker compose -f docker-compose.yml -f dev/docker-compose.prod.db-override.yml rm -f prod",
             "group": "build"
         }
     ]

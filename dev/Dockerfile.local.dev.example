@@ -1,0 +1,73 @@
+# syntax=docker/dockerfile:1
+# Development Dockerfile - extends the base Dockerfile with development tools
+# This file assumes the base image stages have been built and tagged
+
+#################################################################
+## DEVELOPMENT - Full development environment with tools  
+#################################################################
+
+# Build stage - extends testing-builder with dev packages
+FROM qol-backend-api:testing-builder AS dev-builder
+
+# Ensure Poetry environment variables are available (inherited from base image)
+ENV POETRY_CACHE_DIR=/tmp/poetry_cache
+
+# Install development Python packages
+RUN --mount=type=cache,target=$POETRY_CACHE_DIR \
+    # Create dev group if it doesn't exist
+    poetry group add dev 2>/dev/null || true && \
+    # Install hardcoded development packages
+    poetry add --group=dev \
+        ipython==9.3.0 \
+        debugpy==1.8.15 \
+        pylint==3.0.0 \
+        mypy==1.8.0 \
+        ruff==0.12.4
+
+# Runtime stage - extends runtime-base with dev tools
+FROM qol-backend-api:runtime-base AS dev
+
+# Install development tools and Docker CLI
+RUN set -eux; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends \
+        # Essential development tools
+        vim \
+        git \
+        # Docker installation dependencies
+        ca-certificates \
+        curl \
+        gnupg \
+        lsb-release; \
+    # Add Docker's official GPG key
+    curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker.gpg; \
+    # Add Docker repository
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker.gpg] \
+        https://download.docker.com/linux/debian $(lsb_release -cs) stable" > /etc/apt/sources.list.d/docker.list; \
+    # Install Docker CLI and tools
+    apt-get update; \
+    apt-get install -y --no-install-recommends \
+        docker-ce-cli \
+        docker-buildx-plugin \
+        docker-compose-plugin; \
+    # Clean up package cache
+    rm -rf /var/lib/apt/lists/*
+
+# Add appuser to docker group for Docker-out-of-Docker
+RUN groupadd -g 999 docker || true && \
+    usermod -aG docker appuser
+
+# Copy the Python virtual environment with all dependencies
+COPY --from=dev-builder --link /venv/.venv /venv/.venv
+
+# Add metadata labels
+LABEL org.opencontainers.image.title="QoL Backend API - Development" \
+      org.opencontainers.image.description="QoL Backend API - Development Environment with Tools" \
+      org.opencontainers.image.vendor="Quest of Life" \
+      org.opencontainers.image.version="0.1.0"
+
+# Switch to non-root user for security
+USER appuser
+
+# Keep container running for development
+CMD ["sleep", "infinity"]
