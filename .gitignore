@@ -8,8 +8,7 @@ __pycache__/
 app.env
 
 # Developer configuration (local files)
-dev/*.local.env
-dev/Dockerfile.local.dev
+dev_example/
 
 # Logs
 db_inspect.log

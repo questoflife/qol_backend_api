@@ -9,11 +9,11 @@ services:
       # Inherit app.env from base
       - path: ../app.env
         required: false
-      # Inherit dev.local.env from dev compose (if using docker-compose.dev.yml)
-      - path: dev.local.env
+      # Inherit dev.env from dev compose (if using docker-compose.dev.yml)
+      - path: dev.env
         required: false
       # Add database configuration (highest priority)
-      - path: db.local.env
+      - path: db.env
         required: true
     depends_on:
       - db
@@ -24,7 +24,7 @@ services:
   db:
     image: mysql:8.4
     env_file:
-      - path: db.local.env
+      - path: db.env
         required: true
     ports:
       - "3306:3306"
@@ -37,10 +37,10 @@ services:
 #   Dev with DB:          docker compose -f dev/docker-compose.dev.yml -f dev/docker-compose.dev.db-override.yml up --build dev
 #
 # Configuration Files:
-#   dev/db.local.env            - Database settings (optional, ignored by git)
+#   dev/db.env                  - Database settings (optional, ignored by git)
 #
 # Environment File Priority (later files override earlier ones):
 #   1. docker.env (Docker build variables)
 #   2. app.env (base application settings)
-#   3. dev/dev.local.env (development overrides, only when using dev/docker-compose.dev.yml)  
-#   4. dev/db.local.env (database settings, highest priority)
+#   3. dev/dev.env (development overrides, only when using dev/docker-compose.dev.yml)  
+#   4. dev/db.env (database settings, highest priority)

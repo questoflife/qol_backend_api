@@ -56,7 +56,7 @@ EXPOSE 8000
 
 # Add non-root user for security
 RUN groupadd -g 1000 appuser && \
-    useradd -u 1000 -g appuser -s /bin/sh -m appuser && \
+    useradd -u 1000 -g appuser -s /bin/bash -m appuser && \
     mkdir -p /venv && \
     chown appuser:appuser /venv
 # Note: We switch to non-root user right before running ENTRYPOINT or CMD

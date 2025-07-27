@@ -53,10 +53,6 @@ RUN set -eux; \
     # Clean up package cache
     rm -rf /var/lib/apt/lists/*
 
-# Add appuser to docker group for Docker-out-of-Docker
-RUN groupadd -g 999 docker || true && \
-    usermod -aG docker appuser
-
 # Copy the Python virtual environment with all dependencies
 COPY --from=dev-builder --link /venv/.venv /venv/.venv
 

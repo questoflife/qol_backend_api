@@ -24,7 +24,7 @@ services:
   dev:
     build:
       context: ..
-      dockerfile: dev/Dockerfile.local.dev
+      dockerfile: dev/Dockerfile.dev
       target: dev
     depends_on:
       - testing-builder
@@ -33,16 +33,21 @@ services:
       # Load app.env first (base config)
       - path: ../app.env
         required: false
-      # Load dev.local.env second (higher priority, can override app.env)
-      - path: dev.local.env
+      # Load dev.env second (higher priority, can override app.env)
+      - path: dev.env
         required: false
     # Fix file permission issues with bind mounts
     user: "1000:1000"
+    # Add supplementary docker group (get GID from host with: stat -c %g /var/run/docker.sock)
+    group_add:
+      - "${DOCKER_GID:-1001}"
     working_dir: /qol_backend_api
     init: true
     volumes:
-      # Mount the current directory to /qol_backend_api for live development
-      - .:/qol_backend_api:cached
+      # Mount the project root to /qol_backend_api for live development
+      - ..:/qol_backend_api:cached
+      # Mount Docker socket for Docker-outside-of-Docker (DooD)
+      - /var/run/docker.sock:/var/run/docker.sock
 
 #################################################################
 ## USAGE GUIDE
@@ -55,8 +60,8 @@ services:
 # Configuration Files:
 #   ../docker.env               - Docker build variables (committed to git)
 #   ../app.env                  - Application settings (optional, ignored by git)
-#   dev.local.env               - Developer overrides (optional, ignored by git)
+#   dev.env                     - Developer overrides (optional, ignored by git)
 #
 # Dockerfiles:
 #   ../Dockerfile               - Base stages (runtime-base, testing-builder) built by this compose file
-#   Dockerfile.local.dev        - Development environment extending base stages (user customizable, ignored by git)
+#   Dockerfile.dev              - Development environment extending base stages (user customizable, ignored by git)

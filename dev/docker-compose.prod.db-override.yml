@@ -13,7 +13,7 @@ services:
       - path: ../app.env
         required: false
       # Add database configuration (higher priority)
-      - path: db.local.env
+      - path: db.env
         required: true
     depends_on:
       - db
@@ -30,7 +30,7 @@ services:
       - path: ../app.env
         required: false
       # Add database configuration (higher priority)
-      - path: db.local.env
+      - path: db.env
         required: true
     depends_on:
       - db
@@ -41,7 +41,7 @@ services:
   db:
     image: mysql:8.4
     env_file:
-      - path: db.local.env
+      - path: db.env
         required: true
     ports:
       - "3306:3306"
@@ -55,9 +55,9 @@ services:
 #   Testing with DB:      docker compose -f docker-compose.yml -f dev/docker-compose.prod.db-override.yml run --build --rm testing
 #
 # Configuration Files:
-#   dev/db.local.env            - Database settings (optional, ignored by git)
+#   dev/db.env                  - Database settings (optional, ignored by git)
 #
 # Environment File Priority (later files override earlier ones):
 #   1. docker.env (Docker build variables)
 #   2. app.env (base application settings)
-#   3. dev/db.local.env (database settings, highest priority)
+#   3. dev/db.env (database settings, highest priority)

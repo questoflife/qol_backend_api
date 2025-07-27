@@ -24,10 +24,16 @@
 	// connected. This is typically a file mount in .devcontainer/docker-compose.yml
 	"workspaceFolder": "/qol_backend_api",
 
-	// Essential mounts for Docker-out-of-Docker
-	"mounts": [
-		"source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
-	]
+
+	// VS Code extensions to install in the container
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				// Python development essentials
+				"ms-python.python"
+			]
+		}
+	}
 
 	// NOTE: No remoteUser needed - user is already set in Dockerfile (USER appuser) 
 	// and docker-compose.yml (user: "1000:1000"). Adding remoteUser here is redundant.
