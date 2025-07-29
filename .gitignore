@@ -8,10 +8,13 @@ __pycache__/
 app.env
 
 # Developer configuration (local files)
-dev_example/
+.vscode/
+.devcontainer/
+dev/
+
+# Allow dev_example directory and all its contents to be tracked
+!dev_example/
+!dev_example/**
 
 # Logs
 db_inspect.log
-
-# VSCode
-.vscode/settings.json
