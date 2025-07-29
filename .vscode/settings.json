@@ -1,21 +1,21 @@
 // This file contains the vscode setup for inside the dev docker container.
 
 {
-  // ——— Poetry ———                         //
+  // ——— Poetry ———
   // Where the Poetry CLI lives inside the container
-  "python.poetryPath": "/opt/poetry",      // change if needed
+  "python.poetryPath": "/opt/poetry",
 
-  // ——— Interpreter ———                    //
+  // ——— Interpreter ———
   // Use the venv Poetry already created for the project
   "python.defaultInterpreterPath": "/venv/.venv/bin/python",
 
-  // Let the interpreter picker also scan /venv for any other venvs you create
-  "python.venvPath": "/venv",
-
-  // Speed things up in remote containers: scan only the workspace tree
-  "python.discovery.mode": "workspace",
-
-  // ── Integrated terminal ───────────────────────────────────────────
-  // Tell VS Code to use Bash for every new terminal in this container
+  // ——— Terminal ———
+  // Tell VS Code to use Bash for every new terminal in this container
   "terminal.integrated.defaultProfile.linux": "bash",
+
+  // ——— Testing ———
+  // Let pytest.ini handle test discovery and configuration
+  "python.testing.pytestArgs": [],
+  "python.testing.unittestEnabled": false,
+  "python.testing.pytestEnabled": true
 }

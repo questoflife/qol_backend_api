@@ -14,11 +14,14 @@
 	// use. Update this value and .devcontainer/docker-compose.yml to the real service name.
 	"service": "dev",
 
-	// Pre-build images in dependency order to ensure everything is available
-	"initializeCommand": "bash -c 'set -e; echo \"Building base images...\"; docker compose -f dev/docker-compose.dev.yml build runtime-base testing-builder; echo \"Base images built. Building all services...\"; docker compose -f dev/docker-compose.dev.yml -f dev/docker-compose.dev.db-override.yml build; echo \"All builds completed!\"'",
+	// Pre-build base images that dev depends on
+	"initializeCommand": "docker compose -f dev/docker-compose.dev.yml build runtime-base testing-builder",
 
-	// Only start the dev service - db will start automatically due to depends_on
-	"runServices": ["dev"],
+	// Start both dev and db services explicitly to ensure VS Code manages both
+	"runServices": ["dev", "db"],
+
+	// Cleanup command when dev container shuts down
+	"shutdownAction": "stopCompose",
 
 	// The optional 'workspaceFolder' property is the path VS Code should open by default when
 	// connected. This is typically a file mount in .devcontainer/docker-compose.yml
