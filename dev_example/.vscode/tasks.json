@@ -4,7 +4,7 @@
         {
             "label": "Run Tests (testing-db container)",
             "type": "shell",
-            "command": "docker compose -p qol-testing -f docker-compose.yml -f dev/docker-compose.prod.db-override.yml run --rm --build testing pytest",
+            "command": "bash -c 'docker compose -p qol-testing -f docker-compose.yml -f dev/docker-compose.prod.db-override.yml run --rm --build testing pytest; docker compose -p qol-testing -f docker-compose.yml -f dev/docker-compose.prod.db-override.yml down'",
             "group": {
                 "kind": "test",
                 "isDefault": true
