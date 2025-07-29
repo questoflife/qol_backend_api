@@ -6,34 +6,30 @@ services:
   #################################################################
   prod:
     env_file:
-      # Inherit docker.env from base
-      - path: ../docker.env
-        required: true
       # Inherit app.env from base
-      - path: ../app.env
+      - path: app.env
         required: false
       # Add database configuration (higher priority)
-      - path: db.env
+      - path: dev/db.env
         required: true
     depends_on:
-      - db
+      db:
+        condition: service_healthy
 
   #################################################################
   ## TESTING WITH DATABASE
   #################################################################
   testing:
     env_file:
-      # Inherit docker.env from base
-      - path: ../docker.env
-        required: true
       # Inherit app.env from base
-      - path: ../app.env
+      - path: app.env
         required: false
       # Add database configuration (higher priority)
-      - path: db.env
+      - path: dev/db.env
         required: true
     depends_on:
-      - db
+      db:
+        condition: service_healthy
 
   #################################################################
   ## DATABASE
@@ -41,10 +37,16 @@ services:
   db:
     image: mysql:8.4
     env_file:
-      - path: db.env
+      - path: dev/db.env
         required: true
     ports:
-      - "3306:3306"
+      - "3307:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
 #################################################################
 ## USAGE GUIDE
@@ -55,9 +57,8 @@ services:
 #   Testing with DB:      docker compose -f docker-compose.yml -f dev/docker-compose.prod.db-override.yml run --build --rm testing
 #
 # Configuration Files:
-#   dev/db.env                  - Database settings (optional, ignored by git)
+#   dev/db.env                  - Database settings (required)
 #
 # Environment File Priority (later files override earlier ones):
-#   1. docker.env (Docker build variables)
-#   2. app.env (base application settings)
-#   3. dev/db.env (database settings, highest priority)
+#   1. app.env (base application settings)
+#   2. dev/db.env (database settings, highest priority)

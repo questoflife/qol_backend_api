@@ -9,8 +9,6 @@ services:
       context: .
       target: prod
     env_file:
-      - path: docker.env
-        required: true
       - path: app.env
         required: false
 
@@ -23,8 +21,6 @@ services:
       context: .
       target: testing
     env_file:
-      - path: docker.env
-        required: true
       - path: app.env
         required: false
 

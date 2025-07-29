@@ -17,5 +17,5 @@
   // Let pytest.ini handle test discovery and configuration
   "python.testing.pytestArgs": [],
   "python.testing.unittestEnabled": false,
-  "python.testing.pytestEnabled": true
+  "python.testing.pytestEnabled": true,
 }

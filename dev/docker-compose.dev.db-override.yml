@@ -37,10 +37,9 @@ services:
 #   Dev with DB:          docker compose -f dev/docker-compose.dev.yml -f dev/docker-compose.dev.db-override.yml up --build dev
 #
 # Configuration Files:
-#   dev/db.env                  - Database settings (optional, ignored by git)
+#   dev/db.env                  - Database settings (required)
 #
 # Environment File Priority (later files override earlier ones):
-#   1. docker.env (Docker build variables)
-#   2. app.env (base application settings)
-#   3. dev/dev.env (development overrides, only when using dev/docker-compose.dev.yml)  
-#   4. dev/db.env (database settings, highest priority)
+#   1. app.env (base application settings)
+#   2. dev/dev.env (development overrides, only when using dev/docker-compose.dev.yml)  
+#   3. dev/db.env (database settings, highest priority)

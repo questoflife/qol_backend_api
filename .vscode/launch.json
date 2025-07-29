@@ -16,11 +16,10 @@
             "cwd": "${workspaceFolder}"
         },
         {
-            "name": "Debug: Run Tests",
+            "name": "Debug: Current Python File",
             "type": "debugpy",
             "request": "launch",
-            "module": "pytest",
-            "args": ["tests/", "-v"],
+            "program": "${file}",
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}"
         },
