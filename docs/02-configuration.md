@@ -1,47 +1,39 @@
 # Configuration Guide
 
-This document explains how environment variables and developer-specific configurations work in this project.
+This document explains how environment variables and configuration files work in this project.
 
-## Environment Variables
+## Environment File Structure
 
-The application's configuration is managed through `.env` files located in the `config/` directory. This allows for a flexible setup where different environments (development, testing, production) can have different settings.
+The project uses a layered configuration system with environment files:
 
-### Configuration Files
+```
+qol_backend_api/
+├── app.env.example          # Production config template (committed)
+├── app.env                  # Production config (gitignored)
+├── dev_example/dev/         # Development config templates (committed)
+│   ├── dev.env
+│   └── db.env
+└── dev/                     # Development config (gitignored)
+    ├── dev.env
+    └── db.env
+```
 
--   `config/app.env`: Base application settings. Loaded by all services.
--   `config/db.env`: Database connection settings. Used by `dev-db` and `testing-db` services to automatically configure the database.
--   `config/dev.env`: Developer-specific overrides. Loaded only in the `dev` profile, and its values take precedence over `app.env`.
+The `dev_example/` directory contains additional configuration files for the recommended initial setup. See [Gitignore Strategy](#gitignore-strategy) below for more details.
 
-### Precedence Order
+## Configuration Files and Precedence
 
-The environment files are loaded in a specific order, with later files overriding earlier ones:
-1.  `config/app.env` (Lowest priority)
-2.  `config/db.env`
-3.  `config/dev.env` (Highest priority)
+Environment variables are loaded in this order (later values override earlier ones):
 
-### `db.env` for Local Databases
+1. **app.env** - Sets up production configuration including database connections
+2. **dev.env** - Optionally overwrites app.env settings for development setup (when using dev setup)
+3. **db.env** - Overwrites all settings with Docker database configuration when launching the database in Docker
 
-The `docker-compose.yml` is configured to use `config/db.env` to set up the MySQL databases for local development and testing.
+## Gitignore Strategy
 
--   The `dev-db` service uses it to create and configure the development database.
--   The `testing-db` service uses it to create and configure the test database.
+- **Committed:** Templates in `dev_example/dev/` and `app.env.example`
+- **Gitignored:** Actual config in `dev/` and `app.env`
 
-This means you don't have to manually create databases or users. Just configure `config/db.env` and `docker-compose` handles the rest.
-
-## Customizing Your Development Environment
-
-The development container is designed to be customizable without affecting the project's core dependencies.
-
-### Adding Python Packages
-
-To add personal Python tools (e.g., `ipython`, `httpie`):
-1.  Create `config/python-dev-packages.txt` if it doesn't exist.
-2.  Add one package name per line.
-3.  Rebuild the dev container: `docker compose --profile dev-db up --build`
-
-### Adding System Packages
-
-To add system-level tools (e.g., `vim`, `htop`):
-1.  **Build-time dependencies:** Add to `config/apt-build-packages.txt` (for compiling Python packages).
-2.  **Runtime tools:** Add to `config/apt-runtime-packages.txt` (for interactive use).
-3.  Rebuild the dev container.
+This allows:
+- Sharing configuration templates with the team
+- Keeping sensitive credentials out of git
+- Easy local customization without affecting the repository

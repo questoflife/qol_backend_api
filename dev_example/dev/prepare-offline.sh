@@ -5,6 +5,8 @@
 
 set -e
 
+echo "Preparing Docker environment for offline use..."
+
 # Pull BuildKit frontend (the dockerfile:1 parser)
 docker pull docker.io/docker/dockerfile:1
 

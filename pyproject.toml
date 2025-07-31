@@ -18,9 +18,6 @@ cryptography = "^45.0.5"
 pytest = "^8.0.0"
 pytest-asyncio = "^1.1.0"
 
-# Development dependencies are managed through .devpackages
-# See docs/DEVELOPER_CONFIG.md for details
-
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api" 

@@ -1,48 +1,41 @@
 # Testing Guide
 
-This document explains how to run tests and the philosophy behind the testing setup.
+This project uses pytest as the testing framework, configured through `pytest.ini`.
 
-## Running Tests
+### Option A: External Database Testing
 
-The most reliable way to run the entire test suite is by using the `testing` profile in Docker Compose.
-
+**Run Tests Only (Recommended):**
 ```bash
-docker compose --profile testing up --build
+docker compose run testing pytest
 ```
+Runs pytest in the production Docker environment for the most reliable test results.
 
-This command does the following:
-1.  Builds the `testing` stage of the `Dockerfile`, which includes all testing dependencies.
-2.  Spins up a dedicated `testing-db` service, a fresh MySQL instance configured just for this test run.
-3.  Runs the `pytest` command inside the test container against the test database.
-4.  The services are torn down after the tests complete.
-
-This ensures that tests are always run in a clean, isolated, and consistent environment, preventing issues like data contamination between test runs.
-
-## Test Database
-
-The `testing-db` service is ephemeral. It is created when you run the tests and destroyed afterward. The database schema is created and populated by the tests themselves, ensuring that the tests control their own state.
-
-**⚠️ Never run tests against a development or production database.** The testing setup is designed to prevent this, but always be mindful of your environment configuration.
-
-## Writing Tests
-
--   **Location:** All tests are located in the `tests/` directory.
--   **Fixtures:** Common test setup and utilities are located in `tests/conftest.py`. This includes fixtures for creating a test database session and a test API client.
--   **Naming:** Test files should be named `test_*.py`, and test functions should be named `test_*`.
--   **Assertions:** Use the standard `assert` statement provided by `pytest`.
-
-### Example Test
-
-```python
-# tests/test_api.py
-
-from fastapi.testclient import TestClient
-from src.app import app
-
-client = TestClient(app)
-
-def test_read_main():
-    response = client.get("/")
-    assert response.status_code == 200
-    assert response.json() == {"message": "Hello World"}
+**Run Tests + Launch API:**
+```bash
+docker compose up testing
 ```
+Runs pytest first, then launches the app for manual integration testing if pytest passes successfully (uses `startup_with_testing.sh`).
+
+### Option B: Database in Docker Testing
+
+**Run Tests Only (Recommended):**
+```bash
+docker compose -f docker-compose.yml -f dev/docker-compose.prod.db-override.yml run testing pytest
+```
+Runs pytest in the production Docker environment with database override for the most reliable test results.
+
+**Run Tests + Launch API:**
+```bash
+docker compose -f docker-compose.yml -f dev/docker-compose.prod.db-override.yml up testing
+```
+Runs pytest first, then launches the app for manual integration testing if pytest passes successfully (uses `startup_with_testing.sh`).
+
+**VS Code:**
+- Use command palette: `Tasks: Run Test Task` (runs the appropriate docker compose command)
+- Or run pytest natively in the dev environment for debugging
+
+## Test Framework
+
+- **Framework:** pytest with isolated test database instances
+- **Environment:** Tests run in production Docker environment for reliability
+- **Coverage:** Comprehensive test coverage for the user key-value storage API, including basic functionality, concurrency testing, and error handling scenarios

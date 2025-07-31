@@ -1,43 +1,46 @@
 # Architecture Guide
 
-This document provides a deep dive into the project's architecture and code structure.
+This document explains the codebase structure and architectural patterns used in this project.
 
-## Layers
+## Three-Layer Architecture
 
-The application is designed with a classic three-layer architecture to separate concerns:
+The application follows a clean three-layer architecture with strict dependency flow:
 
 ```
-[API Layer] → [Service/Backend Layer] → [Repository/Database Layer]
+src/api/     →     src/backend/     →     src/database/
+(FastAPI)          (Business Logic)      (SQLAlchemy)
 ```
 
-1.  **API Layer (`src/api/`)**
-    -   **Responsibility:** Handles all HTTP request/response logic. It defines the API endpoints, parses incoming data (using Pydantic schemas), and formats the responses.
-    -   **Implementation:** Built with FastAPI. It should not contain any business logic. It calls the service layer to perform actions.
+**Dependency Rule:** Each layer only depends on the layer below it:
+- API layer calls Backend layer functions
+- Backend layer calls Database layer functions  
+- Database layer only interacts with the database
 
-2.  **Service/Backend Layer (`src/backend/`)**
-    -   **Responsibility:** Contains the core business logic of the application. It orchestrates operations, performs validation, and makes decisions.
-    -   **Implementation:** Plain Python functions. It interacts with the repository layer to access and store data.
+## API Endpoints
 
-3.  **Repository/Database Layer (`src/database/`)**
-    -   **Responsibility:** Manages all interactions with the database. It handles creating, reading, updating, and deleting (CRUD) data.
-    -   **Implementation:** Uses SQLAlchemy 2.0 for asynchronous database operations. This layer should not contain any business logic.
+### GET Endpoints
 
-## Request Flow Example
+#### GET /user/dict/{key}
 
-Here’s how a request to set a user's key-value pair flows through the system:
+Retrieve a value by key for the current user.
 
-1.  A `POST /user/data` request hits the API.
-2.  The endpoint in `src/api/user_dict.py` receives the request.
-3.  It validates the incoming JSON against the `UserValue` Pydantic schema.
-4.  The API calls the `set_user_key_value` function in `src/backend/service.py`.
-5.  The service layer might perform additional logic (e.g., checking user permissions).
-6.  The service layer then calls the `set_key_value` function in `src/database/repository.py`.
-7.  The repository function constructs and executes the SQL query using SQLAlchemy to insert or update the data in the database.
-8.  The result is returned up the chain.
+- **Path:** `key` - The key to retrieve
+- **Auth:** Current user (from auth)
+- **Returns:** `{key, value}` - Returns empty string if key doesn't exist
 
-## Key Modules
+### POST Endpoints
 
--   `src/app.py`: The main entry point of the application. It initializes the FastAPI app and includes the API routers.
--   `src/backend/auth.py`: Handles authentication logic, currently using a mocked Discord OAuth2 flow.
--   `src/database/models.py`: Defines the SQLAlchemy database models (i.e., the table schemas).
--   `src/database/config.py`: Manages database session and connection settings.
+#### POST /user/dict
+
+Set a key-value pair for the current user.
+
+- **Body:** `{key, value}` - Key-value pair to store
+- **Auth:** Current user (from auth)  
+- **Returns:** `{message}` - Success confirmation
+
+## Authentication (Mocked)
+
+Currently uses mocked authentication in `src/backend/auth.py`:
+- All requests are assigned to the same example user
+- No actual authentication is performed
+- OAuth integration is planned for future implementation
