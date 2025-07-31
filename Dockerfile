@@ -59,7 +59,8 @@ RUN groupadd -g 1000 appuser && \
     useradd -u 1000 -g appuser -s /bin/bash -m appuser && \
     mkdir -p /venv && \
     chown appuser:appuser /venv
-# Note: We switch to non-root user right before running ENTRYPOINT or CMD
+
+# Note: We switch to non-root user in each target stage before running commands
 
 
 #################################################################
@@ -70,8 +71,10 @@ RUN --mount=type=cache,target=$POETRY_CACHE_DIR poetry install --no-root --only 
 
 # ---------------------------------------------------------------
 FROM runtime-base AS prod
+
 # Copy virtual environment from builder stage
 COPY --from=prod-builder --link /venv/.venv /venv/.venv
+
 # Copy only the application source code
 COPY src ./src
 
@@ -84,6 +87,7 @@ LABEL org.opencontainers.image.title="${APP_NAME}" \
 # Switch to non-root user for security
 USER appuser
 
+# Start the API server
 ENTRYPOINT ["python", "-m", "uvicorn", "src.app:app", "--host", "0.0.0.0", "--port", "8000"]
 
 #################################################################
@@ -94,8 +98,13 @@ RUN --mount=type=cache,target=$POETRY_CACHE_DIR poetry install --no-root --with 
 
 # ---------------------------------------------------------------
 FROM runtime-base AS testing
+
+# Override PYTHONOPTIMIZE for testing - we need assertions to work properly
+ENV PYTHONOPTIMIZE=0
+
 # Copy virtual environment from builder stage
 COPY --from=testing-builder --link /venv/.venv /venv/.venv
+
 # Copy application code and test files
 COPY src ./src/
 COPY tests ./tests/
@@ -104,13 +113,18 @@ COPY pytest.ini ./
 # Copy startup script with execute permission
 COPY --chmod=0755 startup_with_testing.sh /usr/local/bin/
 
+# Fix file ownership for pytest cache creation (must be done as root)
+USER root
+RUN chown -R appuser:appuser /qol_backend_api
+
+# Switch to non-root user for security
+USER appuser
+
 # Add metadata labels
 LABEL org.opencontainers.image.title="${APP_NAME} - Testing" \
       org.opencontainers.image.description="${APP_NAME} - Testing Environment" \
       org.opencontainers.image.vendor="${APP_VENDOR}" \
       org.opencontainers.image.version="${APP_VERSION}"
 
-# Switch to non-root user for security
-USER appuser
-
+# Start the testing environment
 CMD ["/usr/local/bin/startup_with_testing.sh"]
