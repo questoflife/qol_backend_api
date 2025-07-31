@@ -1,0 +1,27 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Run Tests (testing-db container)",
+            "type": "shell",
+            "command": "bash -c 'docker compose -p qol-testing -f docker-compose.yml -f dev/docker-compose.prod.db-override.yml run --rm --build testing pytest; docker compose -p qol-testing -f docker-compose.yml -f dev/docker-compose.prod.db-override.yml down'",
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Production Up",
+            "type": "shell",
+            "command": "docker compose -f docker-compose.yml -f dev/docker-compose.prod.db-override.yml up --build prod",
+            "group": "build"
+        },
+        {
+            "label": "Production Down",
+            "type": "shell",
+            "command": "docker compose -f docker-compose.yml -f dev/docker-compose.prod.db-override.yml stop prod && docker compose -f docker-compose.yml -f dev/docker-compose.prod.db-override.yml rm -f prod",
+            "group": "build"
+        }
+    ]
+}

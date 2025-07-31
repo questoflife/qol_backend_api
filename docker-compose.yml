@@ -1,0 +1,39 @@
+# Docker Compose configuration for QoL Backend API - Production and Testing
+
+services:
+  #################################################################
+  ## PRODUCTION
+  #################################################################
+  prod:
+    build:
+      context: .
+      target: prod
+    env_file:
+      - path: app.env
+        required: false
+
+  #################################################################
+  ## TESTING
+  #################################################################
+  # Testing app (standalone)
+  testing:
+    build:
+      context: .
+      target: testing
+    env_file:
+      - path: app.env
+        required: false
+
+#################################################################
+## USAGE GUIDE
+#################################################################
+#
+# Run commands:
+#   Production:       docker compose up --build prod
+#   Testing:          docker compose run --build --rm testing
+#
+# Configuration Files:
+#   app.env                     - Application settings (optional, ignored by git)
+#
+# Dockerfiles:
+#   Dockerfile                  - Base production and testing stages (committed to git)

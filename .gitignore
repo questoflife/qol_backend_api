@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Environment files
+.env
+app.env
+
+# Developer configuration (local files)
+.vscode/
+.devcontainer/
+dev/
+
+# Allow dev_example directory and all its contents to be tracked
+!dev_example/
+!dev_example/**
+
+# Logs
+db_inspect.log
