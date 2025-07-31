@@ -6,7 +6,7 @@ import asyncio
 import pytest
 from httpx import AsyncClient, ASGITransport
 
-from app.main import app
+from src.app import app
 
 
 # --- Basic API functionality tests ---

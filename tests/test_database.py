@@ -5,8 +5,8 @@ Tests the repository layer and database operations.
 import pytest
 from sqlalchemy.future import select
 
-from app.database.models import UserKeyValue
-from app.database.repository import get_user_key_value, set_user_key_value
+from src.database.models import UserKeyValue
+from src.database.repository import get_user_key_value, set_user_key_value
 
 
 # ============================================================================

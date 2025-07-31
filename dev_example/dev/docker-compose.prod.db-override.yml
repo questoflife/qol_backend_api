@@ -1,0 +1,64 @@
+# Docker Compose database override - Adds database to production and testing services
+
+services:
+  #################################################################
+  ## PRODUCTION WITH DATABASE
+  #################################################################
+  prod:
+    env_file:
+      # Inherit app.env from base
+      - path: app.env
+        required: false
+      # Add database configuration (higher priority)
+      - path: dev/db.env
+        required: true
+    depends_on:
+      db:
+        condition: service_healthy
+
+  #################################################################
+  ## TESTING WITH DATABASE
+  #################################################################
+  testing:
+    env_file:
+      # Inherit app.env from base
+      - path: app.env
+        required: false
+      # Add database configuration (higher priority)
+      - path: dev/db.env
+        required: true
+    depends_on:
+      db:
+        condition: service_healthy
+
+  #################################################################
+  ## DATABASE
+  #################################################################
+  db:
+    image: mysql:8.4
+    env_file:
+      - path: dev/db.env
+        required: true
+    ports:
+      - "3307:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+#################################################################
+## USAGE GUIDE
+#################################################################
+#
+# Run commands with database:
+#   Production with DB:   docker compose -f docker-compose.yml -f dev/docker-compose.prod.db-override.yml up --build prod
+#   Testing with DB:      docker compose -f docker-compose.yml -f dev/docker-compose.prod.db-override.yml run --build --rm testing
+#
+# Configuration Files:
+#   dev/db.env                  - Database settings (required)
+#
+# Environment File Priority (later files override earlier ones):
+#   1. app.env (base application settings)
+#   2. dev/db.env (database settings, highest priority)

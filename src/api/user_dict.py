@@ -5,10 +5,10 @@ Provides endpoints for getting and setting user key-value pairs.
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.backend.auth import get_current_user
-from app.database.config import get_app_async_session
-from app.api.schemas import KeyValueIn, KeyValueOut
-from app.backend.service import get_user_key_value, set_user_key_value
+from src.backend.auth import get_current_user
+from src.database.config import get_app_async_session
+from src.api.schemas import KeyValueIn, KeyValueOut
+from src.backend.service import get_user_key_value, set_user_key_value
 
 router = APIRouter()
 

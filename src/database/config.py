@@ -1,18 +1,16 @@
 """
 Async SQLAlchemy database configuration for Quest of Life Backend API.
 
-- Reads all settings from environment variables (.env).
+- Reads all settings from environment variables.
 - Environment-agnostic: does not enforce test/dev/prod safety; all safety is handled in test utilities and entry points (see README).
+- In development: use docker-compose env_file or local .env
+- In production: use secret injection (K8s secrets, Docker secrets, etc.)
 """
 import os
 from typing import AsyncGenerator
 from functools import lru_cache
 
-from dotenv import load_dotenv
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine, AsyncEngine
-
-# Load environment variables from .env file
-load_dotenv()
 
 # Global variable declarations (type only, no assignment)
 ASYNC_SERVER_URL: str

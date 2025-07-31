@@ -5,7 +5,7 @@ Provides async CRUD operations for the UserKeyValue model.
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
-from app.database.models import UserKeyValue
+from src.database.models import UserKeyValue
 
 async def get_user_key_value(session: AsyncSession, user_id: str, key: str) -> str | None:
     """
