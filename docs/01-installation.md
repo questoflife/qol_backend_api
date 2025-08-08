@@ -32,13 +32,21 @@ docker compose run testing pytest
 
 ## Development Setup
 
-**Copy development configuration:**
-```bash
-cp -r dev_example/dev/* dev/
-```
-This copies the development examples (committed to git) to your local config directory (gitignored), allowing you to modify settings without affecting the repository.
+The `dev_example` directory is committed to git and contains an example configuration and Docker files. Copy its contents to the repository root; the resulting paths (for example, `dev/`) are gitignored so you can customize them locally. Edit files inside `dev_example` only if you want to update the shared templates in the repository.
 
-> **💡 Quick Start:** For the simplest setup, jump to [Option B: VS Code Integrated Docker](#vs-code-integrated-docker--recommended---simplest-setup)
+**Copy local configuration templates:**
+```bash
+cp -r dev_example/* .
+```
+
+Tips:
+- To avoid overwriting existing local changes: `cp -rn dev_example/* .`
+- To refresh with the latest templates (overwrite): `cp -r dev_example/* .`
+
+---
+
+#### 
+> **Quick start:** For the simplest recommended setup, skip to [Option B → 3. VS Code Integrated Docker](#vs-code-integrated-docker--recommended---simplest-setup).
 
 ### Option A: External Database (you host elsewhere)
 
