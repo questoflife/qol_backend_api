@@ -1,6 +1,10 @@
 # Testing Guide
 
-This project uses pytest as the testing framework, configured through `pytest.ini`.
+This project uses pytest as the testing framework, configured through `pytest.ini`. Currently, the only test entrypoint is `pytest`.
+
+## Running Tests
+
+Tests should be run in the testing Docker environment before committing or making pull requests to ensure the codebase is ready for integration. The testing environment mirrors the production setup without development tools, providing the most reliable validation. Local tests in your debug environment may still be useful during development for debugging purposes.
 
 ### Option A: External Database Testing
 

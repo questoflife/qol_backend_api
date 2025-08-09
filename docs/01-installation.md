@@ -10,13 +10,13 @@ This guide provides comprehensive setup instructions for both production and dev
 
 ## Quick Start (Production)
 
-1. **Clone the repository**
+1. **Clone the repository and navigate to the project directory:**
 
 2. **Configure environment:**
     ```bash
     cp app.env.example app.env
     ```
-    Fill in the database credentials in `app.env` to specify how the backend connects to your MySQL database.
+    Fill in the database credentials in `app.env` based on `app.env.example` to specify how the backend connects to your MySQL database.
 
 3. **Run with Docker Compose:**
     ```bash
@@ -25,7 +25,7 @@ This guide provides comprehensive setup instructions for both production and dev
 
 ### Testing
 
-Run tests to verify the setup:
+Run tests to verify the setup (from the project directory):
 ```bash
 docker compose run testing pytest
 ```
@@ -46,19 +46,24 @@ Tips:
 ---
 
 #### 
-> **Quick start:** For the simplest recommended setup, skip to [Option B → 3. VS Code Integrated Docker](#vs-code-integrated-docker--recommended---simplest-setup).
+> **Quick start:** For the simplest recommended setup, skip to [Option B → B3. VS Code Integrated Docker](#vs-code-integrated-docker--recommended---simplest-setup).
 
 ### Option A: External Database (you host elsewhere)
 
 **Configure database connection:**
 - Fill in `dev/dev.env` with your database credentials.
 
-**Choose your preferred development method:**
+**Choose your preferred development method and follow one of {A1, A2}:**
 
-1. **For development with custom local Python** (Prerequisites: Python 3.12+ and Poetry)
-    Poetry requirements are in pyproject.toml.
+- **Option A1: For development with custom local Python** (Prerequisites: Python 3.12+ and Poetry)
+    Use your own local environment with at least the requirements listed in pyproject.toml.
+    
+    Load environment variables (see [Configuration Guide](../docs/02-configuration.md#loading-environment-variables)) then:
+    - **Run the app:** `python -m uvicorn src.app:app --host 0.0.0.0 --port 8000`
+    - **Run tests:** `pytest`
+    - **Debug/develop:** Use your IDE or run individual Python modules
 
-2. **For Docker Containerization**
+- **Option A2: For Docker Containerization**
 
     Build the development container and its dependencies:
     ```bash
@@ -90,16 +95,21 @@ Tips:
 **Configure database settings:**
 - Modify `dev/db.env` according to your preferences
 
-**Choose your preferred development method:**
+**Choose your preferred development method and follow one of {B1, B2, B3}:**
 
-1. **For development with custom local Python** (Prerequisites: Python 3.12+ and Poetry)
+- **Option B1: For development with custom local Python** (Prerequisites: Python 3.12+ and Poetry)
     Start database only:
     ```bash
     docker compose -f dev/docker-compose.dev.yml -f dev/docker-compose.dev.db-override.yml up db
     ```
-    Then run app locally with Poetry requirements from pyproject.toml.
+    Then use your own local environment with at least the requirements listed in pyproject.toml.
+    
+    Load environment variables (see [Configuration Guide](../docs/02-configuration.md#loading-environment-variables)) then:
+    - **Run the app:** `python -m uvicorn src.app:app --host 0.0.0.0 --port 8000`
+    - **Run tests:** `pytest`
+    - **Debug/develop:** Use your IDE or run individual Python modules
 
-2. **For Docker Containerization**
+- **Option B2: For Docker Containerization**
 
     Build the development container and its dependencies:
     ```bash
@@ -126,7 +136,7 @@ Tips:
     docker compose -f dev/docker-compose.dev.yml -f dev/docker-compose.dev.db-override.yml exec dev python
     ```
 
-3. **VS Code Integrated Docker** ⭐ **Recommended - Simplest Setup**
+- **Option B3: VS Code Integrated Docker** ⭐ **Recommended - Simplest Setup**
 
     The `.devcontainer` configuration prepares everything automatically including the database and development environment.
     

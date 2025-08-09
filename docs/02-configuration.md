@@ -22,11 +22,20 @@ The `dev_example/` directory contains additional configuration files for the rec
 
 ## Configuration Files and Precedence
 
-Environment variables are loaded in this order (later values override earlier ones):
+### Docker Compose
+When using Docker Compose, environment variables are loaded in this order (later values override earlier ones):
 
 1. **app.env** - Sets up production configuration including database connections
 2. **dev.env** - Optionally overwrites app.env settings for development setup (when using dev setup)
 3. **db.env** - Overwrites all settings with Docker database configuration when launching the database in Docker
+
+### Local Development
+Load environment variables from your relevant file (e.g. `app.env` or `dev/dev.env` depending on your setup). For example, in bash:
+```bash
+env $(grep -v '^#' app.env | xargs) python -m uvicorn src.app:app --host 0.0.0.0 --port 8000
+```
+
+Alternatively, export variables to your shell session (`export $(grep -v '^#' app.env | xargs)`) or configure your IDE to load the environment file.
 
 ## Gitignore Strategy
 
