@@ -21,7 +21,8 @@ This repository contains a Python backend service that exposes a REST API and co
 > **Note:** This is for production setup only. For development instructions, see the [Installation Guide](docs/01-installation.md).
 
 ### Prerequisites
-- Docker and Docker Compose
+- Docker 20.10+ (for BuildKit support)
+- Docker Compose 2.24+ (for env_file.required feature)
 - MySQL 8 database
 
 ### Production Setup
@@ -35,6 +36,7 @@ This repository contains a Python backend service that exposes a REST API and co
    ```bash
    docker compose up
    ```
+   > **Note:** If you get syntax errors, ensure you have Docker 20.10+ and Docker Compose 2.24+
 
 3. **Test:**
    ```bash

@@ -1,4 +1,5 @@
-# syntax=docker/dockerfile:1
+# syntax=docker/dockerfile:1.4
+# Requires Docker 20.10+
 
 #################################################################
 ## Global build arguments

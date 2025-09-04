@@ -1,4 +1,5 @@
-# syntax=docker/dockerfile:1
+# syntax=docker/dockerfile:1.4
+# Requires Docker 20.10+
 # Development Dockerfile - extends the base Dockerfile with development tools
 # This file assumes the base image stages have been built and tagged
 

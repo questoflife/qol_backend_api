@@ -4,8 +4,8 @@ This guide provides comprehensive setup instructions for both production and dev
 
 ## Prerequisites
 
-- Docker
-- Docker Compose
+- Docker 20.10+ (for BuildKit support)
+- Docker Compose 2.24+ (for env_file.required feature)
 - MySQL 8 database
 
 ## Quick Start (Production)
@@ -22,6 +22,7 @@ This guide provides comprehensive setup instructions for both production and dev
     ```bash
     docker compose up
     ```
+    > **Note:** If you encounter syntax errors, ensure you have Docker 20.10+ and Docker Compose 2.24+
 
 ### Testing
 

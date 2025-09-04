@@ -1,4 +1,5 @@
 # Docker Compose database override - Adds database to development environment only
+# Requires Docker Compose 2.24+ (uses env_file.required feature)
 
 services:
   #################################################################
