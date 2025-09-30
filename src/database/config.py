@@ -42,7 +42,10 @@ _init_config()
 
 def create_app_async_engine() -> AsyncEngine:
     """Create a new async SQLAlchemy engine for the configured database."""
-    return create_async_engine(f"{ASYNC_SERVER_URL}/{DB_NAME}", echo=True)
+    url = f"{ASYNC_SERVER_URL}/{DB_NAME}"
+    # Force TLS for all connections using default system trust (no custom CA support).
+    connect_args = {"ssl": {}}
+    return create_async_engine(url, echo=True, connect_args=connect_args)
 
 
 def create_app_async_session_factory(engine: AsyncEngine) -> async_sessionmaker:
