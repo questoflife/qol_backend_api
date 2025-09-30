@@ -7,6 +7,7 @@ Async SQLAlchemy database configuration for Quest of Life Backend API.
 - In production: use secret injection (K8s secrets, Docker secrets, etc.)
 """
 import os
+import ssl
 from typing import AsyncGenerator
 from functools import lru_cache
 
@@ -44,7 +45,9 @@ def create_app_async_engine() -> AsyncEngine:
     """Create a new async SQLAlchemy engine for the configured database."""
     url = f"{ASYNC_SERVER_URL}/{DB_NAME}"
     # Force TLS for all connections using default system trust (no custom CA support).
-    connect_args = {"ssl": {}}
+    # Use a real SSLContext to ensure TLS is negotiated (required when server enforces secure transport)
+    ssl_ctx = ssl.create_default_context()
+    connect_args = {"ssl": ssl_ctx}
     return create_async_engine(url, echo=True, connect_args=connect_args)
 
 

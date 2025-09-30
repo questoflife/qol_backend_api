@@ -10,6 +10,7 @@ SAFETY PRINCIPLE:
 """
 from sqlalchemy import text, create_engine
 import os
+import ssl
 from src.database.config import DB_NAME, SYNC_SERVER_URL, create_app_async_engine, create_app_async_session_factory
 
 def _ensure_test_environment():
@@ -29,14 +30,14 @@ def destructive_recreate_database_and_tables() -> None:
     """
     _ensure_test_environment()
     # Use server_engine for operations without a DB selected
-    server_engine = create_engine(SYNC_SERVER_URL, echo=False, connect_args={"ssl": {}})
+    server_engine = create_engine(SYNC_SERVER_URL, echo=False, connect_args={"ssl": ssl.create_default_context()})
     with server_engine.connect() as conn:
         conn.execute(text(f"DROP DATABASE IF EXISTS `{DB_NAME}`"))
         conn.execute(text(f"CREATE DATABASE `{DB_NAME}`"))
     server_engine.dispose()
     # Use db_engine for operations with the DB selected
     from src.database.models import Base
-    db_engine = create_engine(f"{SYNC_SERVER_URL}/{DB_NAME}", echo=False, connect_args={"ssl": {}})
+    db_engine = create_engine(f"{SYNC_SERVER_URL}/{DB_NAME}", echo=False, connect_args={"ssl": ssl.create_default_context()})
     with db_engine.begin() as conn:
         result = conn.execute(text("SHOW TABLES"))
         if result.first() is not None:
@@ -51,7 +52,7 @@ def destructive_drop_test_database() -> None:
     Disposes of the db_engine before dropping the database to avoid zombie connections.
     """
     _ensure_test_environment()
-    server_engine = create_engine(SYNC_SERVER_URL, echo=False, connect_args={"ssl": {}})
+    server_engine = create_engine(SYNC_SERVER_URL, echo=False, connect_args={"ssl": ssl.create_default_context()})
     with server_engine.connect() as conn:
         conn.execute(text(f"DROP DATABASE IF EXISTS `{DB_NAME}`"))
     server_engine.dispose()
