@@ -41,7 +41,7 @@ services:
     user: "1000:1000"
     # Add supplementary docker group (get GID from host with: stat -c %g /var/run/docker.sock)
     group_add:
-      - "${DOCKER_GID:-1001}"
+      - "${DOCKER_GID:-0}"
     working_dir: /qol_backend_api
     init: true
     volumes:

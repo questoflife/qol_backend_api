@@ -6,9 +6,9 @@ This guide provides comprehensive setup instructions for both production and dev
 
 - Docker 20.10+ (for BuildKit support)
 - Docker Compose 2.24+ (for env_file.required feature)
-- MySQL 8 database
+- (Optional) MySQL 8 database (You can run the sections "with database" for testing)
 
-## Quick Start (Production)
+## Production environment (and testing)
 
 1. **Clone the repository and navigate to the project directory:**
 
@@ -44,10 +44,40 @@ Tips:
 - To avoid overwriting existing local changes: `cp -rn dev_example/* .`
 - To refresh with the latest templates (overwrite): `cp -r dev_example/* .`
 
+### Docker socket group (DOCKER_GID)
+
+The dev container needs the group id of `/var/run/docker.sock` so the non‑root user can run `docker` commands.
+
+1. Get the group id:
+   ```bash
+   stat -c %g /var/run/docker.sock
+   ```
+2. Put it in `dev/dev.env`:
+   ```
+   DOCKER_GID=<number>
+   ```
+   Leave it as `0` if the socket is owned by `root:root` (common on Docker Desktop). Example Linux value might be 998.
+3. Test inside the container:
+   ```bash
+   docker compose -f dev/docker-compose.dev.yml run --rm dev docker ps
+   ```
+
+If you see "permission denied", re-check the number. Access to the Docker socket is powerful—only enable it on trusted machines.
+
 ---
 
 #### 
 > **Quick start:** For the simplest recommended setup, skip to [Option B → B3. VS Code Integrated Docker](#vs-code-integrated-docker--recommended---simplest-setup).
+### Choose your setup
+You have the following options. First choose what database you want to use:
+- To use your own MySQL 8 database, use Option A.
+- To launch a database in docker, use Option B.
+
+Then choose what python interpreter to use:
+- For your own local python environment, use option 1 (A1 or B1)
+- For a containerised python environment in docker, use option 2 (A2 or B2)
+
+Lastly, you could also use option B3, which is B2 + VS code integration, which launches VS code in a docker container.
 
 ### Option A: External Database (you host elsewhere)
 
@@ -62,7 +92,6 @@ Tips:
     Load environment variables (see [Configuration Guide](../docs/02-configuration.md#loading-environment-variables)) then:
     - **Run the app:** `python -m uvicorn src.app:app --host 0.0.0.0 --port 8000`
     - **Run tests:** `pytest`
-    - **Debug/develop:** Use your IDE or run individual Python modules
 
 - **Option A2: For Docker Containerization**
 
@@ -77,7 +106,7 @@ Tips:
     docker compose -f dev/docker-compose.dev.yml build dev
     ```
 
-    Run commands in isolation (creates and destroys container):
+    Run commands in isolation (creates and destroys container) (replace 'python' with relevant command):
     ```bash
     docker compose -f dev/docker-compose.dev.yml run dev python
     ```
@@ -87,9 +116,14 @@ Tips:
     # Start container
     docker compose -f dev/docker-compose.dev.yml up -d dev
 
-    # Execute commands in running container
+    # Execute commands in running container (replace 'python' with relevant command)
     docker compose -f dev/docker-compose.dev.yml exec dev python
     ```
+    Run tests using:
+    ```
+    docker compose -f def/docker-compose.dev.yml run dev pytest
+    ```
+
 
 ### Option B: Database in Docker
 
@@ -108,7 +142,6 @@ Tips:
     Load environment variables (see [Configuration Guide](../docs/02-configuration.md#loading-environment-variables)) then:
     - **Run the app:** `python -m uvicorn src.app:app --host 0.0.0.0 --port 8000`
     - **Run tests:** `pytest`
-    - **Debug/develop:** Use your IDE or run individual Python modules
 
 - **Option B2: For Docker Containerization**
 
@@ -136,7 +169,10 @@ Tips:
     # Execute commands in running container
     docker compose -f dev/docker-compose.dev.yml -f dev/docker-compose.dev.db-override.yml exec dev python
     ```
-
+    Run tests using:
+    ```
+    docker compose -f dev/docker-compose.dev.yml -f dev/docker-compose.dev.db-override.yml run dev pytest
+    ```
 - **Option B3: VS Code Integrated Docker** ⭐ **Recommended - Simplest Setup**
 
     The `.devcontainer` configuration prepares everything automatically including the database and development environment.
@@ -144,6 +180,9 @@ Tips:
     - Open the project folder in VS Code
     - Use command palette: `Dev Containers: Reopen in Container`
     - VS Code will build and start the complete development environment
+    - You can run tests within the container using pytest
+    - You can also run an independent thest in a separate container with the `Tasks: Run Test Tasks` command.
+    If you get "permission denied", ensure you have the right DOCKER_GID in dev.env (see section **Docker socket group (DOCKER_GID)** above)
 
 ## Offline Preparation
 
