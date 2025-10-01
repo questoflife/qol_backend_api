@@ -44,9 +44,16 @@ _init_config()
 def create_app_async_engine() -> AsyncEngine:
     """Create a new async SQLAlchemy engine for the configured database."""
     url = f"{ASYNC_SERVER_URL}/{DB_NAME}"
-    # Force TLS for all connections using default system trust (no custom CA support).
-    # Use a real SSLContext to ensure TLS is negotiated (required when server enforces secure transport)
+    # TLS enforcement: always attempt an encrypted connection.
+    # Optional verification disable (for local dev/test with self-signed MySQL auto certs):
+    #   Set DB_SSL_DISABLE_VERIFICATION=true (or 1/yes) to skip hostname & cert validation.
+    #   WARNING: Never set this in production; it weakens security (MITM risk).
     ssl_ctx = ssl.create_default_context()
+    disable_verification = os.getenv("DB_SSL_DISABLE_VERIFICATION", "false").lower() in {"1", "true", "yes"}
+    if disable_verification:
+        # Relax verification while still encrypting the transport.
+        ssl_ctx.check_hostname = False
+        ssl_ctx.verify_mode = ssl.CERT_NONE  # type: ignore[attr-defined]
     connect_args = {"ssl": ssl_ctx}
     return create_async_engine(url, echo=True, connect_args=connect_args)
 
