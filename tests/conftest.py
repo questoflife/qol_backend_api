@@ -5,7 +5,12 @@ import pytest
 import os
 
 from src.database.models import Base
-from tests.database_utils import destructive_recreate_database_and_tables, destructive_drop_test_database, create_pytest_engine_and_session_factory, _ensure_test_environment
+from tests.database_utils import (
+    create_pytest_engine_and_session_factory,
+    _ensure_test_environment,
+    create_test_schema_once,
+    drop_test_schema,
+)
 from src.database.config import get_app_async_session
 from src.app import app
 
@@ -13,16 +18,11 @@ from src.app import app
 _ensure_test_environment()
 
 @pytest.fixture(scope="session")
-def test_database():
-    """
-    Session-scoped fixture that sets up and tears down the pytest database.
-    Runs once per test session.
-    """
-    # Setup
-    destructive_recreate_database_and_tables()
-    yield  # This is where tests run
-    # Teardown
-    destructive_drop_test_database()
+async def test_db_session_scope():
+    """Session-scoped async fixture: ensure schema exists, drop at end."""
+    await create_test_schema_once()
+    yield
+    await drop_test_schema()
 
 @pytest.fixture
 async def session_factory():
@@ -36,7 +36,7 @@ async def session_factory():
     await engine.dispose()
 
 @pytest.fixture
-async def clean_db(test_database, session_factory):
+async def clean_db(test_db_session_scope, session_factory):
     """
     Cleans all tables before and after each test.
     Ensures a clean database state for every test function.

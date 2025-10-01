@@ -15,7 +15,6 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 # Global variable declarations (type only, no assignment)
 ASYNC_SERVER_URL: str
-SYNC_SERVER_URL: str
 DB_NAME: str
 _engine = None
 _async_session_factory = None
@@ -23,7 +22,7 @@ _async_session_factory = None
 
 def _init_config() -> None:
     """Initialize configuration constants from environment variables."""
-    global ASYNC_SERVER_URL, SYNC_SERVER_URL, DB_NAME
+    global ASYNC_SERVER_URL, DB_NAME
     db_user = os.getenv("DB_USER")
     db_password = os.getenv("DB_PASSWORD")
     db_host = os.getenv("DB_HOST")
@@ -34,7 +33,6 @@ def _init_config() -> None:
             "Database configuration is incomplete. "
             "Set all of DB_USER, DB_PASSWORD, DB_HOST, DB_PORT, and DB_NAME.")
     ASYNC_SERVER_URL = f"mysql+aiomysql://{db_user}:{db_password}@{db_host}:{db_port}"
-    SYNC_SERVER_URL = f"mysql+pymysql://{db_user}:{db_password}@{db_host}:{db_port}"
     DB_NAME = db_name  # type: ignore
 
 # Initialize config on import
