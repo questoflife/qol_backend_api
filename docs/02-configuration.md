@@ -46,3 +46,13 @@ This allows:
 - Sharing configuration templates with the team
 - Keeping sensitive credentials out of git
 - Easy local customization without affecting the repository
+
+## Env variables
+`DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` are used by the app to setup the connection between this repo/backend/api to the mysql database.
+
+`ALLOWED_ORIGINS` is a comma separated list of domains to be used by CORS
+
+If using the installation option B, with Database in Docker,
+then the following variables are used to set up the mysql database:
+`MYSQL_ROOT_PASSWORD`, `MYSQL_DATABASE`, `MYSQL_USER`, `MYSQL_PASSWORD`.
+Make sure they match the app's variables (`DB_...`)

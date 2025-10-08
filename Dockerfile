@@ -89,7 +89,8 @@ LABEL org.opencontainers.image.title="${APP_NAME}" \
 USER appuser
 
 # Start the API server
-ENTRYPOINT ["python", "-m", "uvicorn", "src.app:app", "--host", "0.0.0.0", "--port", "8000"]
+# Added --proxy-headers so FastAPI/Starlette respect X-Forwarded-* from platform proxy (correct https scheme & client IP)
+ENTRYPOINT ["python", "-m", "uvicorn", "src.app:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers"]
 
 #################################################################
 ## TESTING - Environment for running tests
