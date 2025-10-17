@@ -14,16 +14,7 @@ FROM qol-backend-api:testing-builder AS dev-builder
 ENV POETRY_CACHE_DIR=/tmp/poetry_cache
 
 # Install development Python packages
-RUN --mount=type=cache,target=$POETRY_CACHE_DIR \
-    # Create dev group if it doesn't exist
-    poetry group add dev 2>/dev/null || true && \
-    # Install hardcoded development packages
-    poetry add --group=dev \
-        ipython==9.3.0 \
-        debugpy==1.8.15 \
-        pylint==3.0.0 \
-        mypy==1.8.0 \
-        ruff==0.12.4
+RUN --mount=type=cache,target=$POETRY_CACHE_DIR poetry install --no-root --with testing --with dev
 
 # Runtime stage - extends runtime-base with dev tools
 FROM qol-backend-api:runtime-base AS dev
