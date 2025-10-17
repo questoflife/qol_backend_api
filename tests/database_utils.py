@@ -5,7 +5,7 @@ managing schema lifecycle. All helpers enforce that the configured DB name
 contains 'test' to reduce risk of accidental destructive operations against
 non-test databases.
 """
-from src.database.config import DB_NAME, create_app_async_engine, create_app_async_session_factory
+from src.database.config import get_database_settings, create_app_async_engine, create_app_async_session_factory
 from src.database.models import Base
 
 
@@ -15,8 +15,8 @@ def _ensure_test_environment():
     Checks that DB_NAME contains 'test'.
     Raises RuntimeError if not safe.
     """
-    if "test" not in DB_NAME.lower():
-        raise RuntimeError(f"Operation can only be run if DB_NAME contains 'test' (got DB_NAME={DB_NAME})!")
+    if "test" not in get_database_settings().DB_NAME.lower():
+        raise RuntimeError(f"Operation can only be run if DB_NAME contains 'test' (got DB_NAME={get_database_settings().DB_NAME})!")
 
 def create_pytest_engine_and_session_factory():
     """

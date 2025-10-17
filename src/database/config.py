@@ -10,44 +10,45 @@ import os
 import ssl
 from typing import AsyncGenerator
 from functools import lru_cache
+from pydantic_settings import BaseSettings
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine, AsyncEngine
 
+
 # Global variable declarations (type only, no assignment)
-ASYNC_SERVER_URL: str
-DB_NAME: str
 _engine = None
 _async_session_factory = None
 
 
-def _init_config() -> None:
-    """Initialize configuration constants from environment variables."""
-    global ASYNC_SERVER_URL, DB_NAME
-    db_user = os.getenv("DB_USER")
-    db_password = os.getenv("DB_PASSWORD")
-    db_host = os.getenv("DB_HOST")
-    db_port = os.getenv("DB_PORT")
-    db_name = os.getenv("DB_NAME")
-    if not all([db_user, db_password, db_host, db_port, db_name]):
-        raise RuntimeError(
-            "Database configuration is incomplete. "
-            "Set all of DB_USER, DB_PASSWORD, DB_HOST, DB_PORT, and DB_NAME.")
-    ASYNC_SERVER_URL = f"mysql+aiomysql://{db_user}:{db_password}@{db_host}:{db_port}"
-    DB_NAME = db_name  # type: ignore
+class DatabaseSettings(BaseSettings):
+    DB_USER: str
+    DB_PASSWORD: str
+    DB_HOST: str
+    DB_PORT: str
+    DB_NAME: str
+    DB_SSL_DISABLE_VERIFICATION: bool = False
 
-# Initialize config on import
-_init_config()
+    @property
+    def ASYNC_SERVER_URL(self) -> str:
+        return f"mysql+aiomysql://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}"
+
+
+@lru_cache(maxsize=1)
+def get_database_settings() -> DatabaseSettings:
+    """Load database settings from environment variables."""
+    return DatabaseSettings()  # loaded from env vars  # type: ignore[call-arg]
+
 
 
 def create_app_async_engine() -> AsyncEngine:
     """Create a new async SQLAlchemy engine for the configured database."""
-    url = f"{ASYNC_SERVER_URL}/{DB_NAME}"
+    url = f"{get_database_settings().ASYNC_SERVER_URL}/{get_database_settings().DB_NAME}"
     # TLS enforcement: always attempt an encrypted connection.
     # Optional verification disable (for local dev/test with self-signed MySQL auto certs):
-    #   Set DB_SSL_DISABLE_VERIFICATION=true (or 1/yes) to skip hostname & cert validation.
+    #   Set DB_SSL_DISABLE_VERIFICATION=true to skip hostname & cert validation.
     #   WARNING: Never set this in production; it weakens security (MITM risk).
     ssl_ctx = ssl.create_default_context()
-    disable_verification = os.getenv("DB_SSL_DISABLE_VERIFICATION", "false").lower() in {"1", "true", "yes"}
+    disable_verification = get_database_settings().DB_SSL_DISABLE_VERIFICATION
     if disable_verification:
         # Relax verification while still encrypting the transport.
         ssl_ctx.check_hostname = False
