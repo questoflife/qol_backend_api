@@ -38,4 +38,4 @@ async def set_user_value_endpoint(
     Returns a success message on completion.
     """
     await set_user_key_value(session, current_user, payload.key, payload.value)
-    return {"message": "Value set successfully."} 
+    return {"message": "Value set successfully."}
