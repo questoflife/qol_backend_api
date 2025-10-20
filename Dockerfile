@@ -104,8 +104,33 @@ FROM runtime-base AS testing
 # Override PYTHONOPTIMIZE for testing - we need assertions to work properly
 ENV PYTHONOPTIMIZE=0
 
+# Install Playwright system dependencies for E2E tests (headless browser)
+# This adds ~150MB but enables E2E OAuth testing in CI/CD
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        # Playwright dependencies for Chromium
+        libnss3 \
+        libnspr4 \
+        libatk1.0-0 \
+        libatk-bridge2.0-0 \
+        libcups2 \
+        libdrm2 \
+        libdbus-1-3 \
+        libxkbcommon0 \
+        libxcomposite1 \
+        libxdamage1 \
+        libxfixes3 \
+        libxrandr2 \
+        libgbm1 \
+        libasound2 && \
+    rm -rf /var/lib/apt/lists/*
+
 # Copy virtual environment from builder stage
 COPY --from=testing-builder --link /venv/.venv /venv/.venv
+
+# Install Playwright browsers (Chromium for E2E tests)
+# Must be done after copying venv so playwright command is available
+RUN playwright install chromium
 
 # Copy application code and test files
 COPY src ./src/
