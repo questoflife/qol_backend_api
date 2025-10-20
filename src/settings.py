@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     # Session + security
     SESSION_COOKIE_NAME: str
     SESSION_TTL_SECONDS: int = 14 * 24 * 60 * 60  # 14 days
-    CSRF_HEADER_NAME: str = "X-CSRF-Token"s
+    CSRF_HEADER_NAME: str = "X-CSRF-Token"
 
     # Security
     SECRET_KEY: str

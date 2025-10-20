@@ -1,7 +1,7 @@
 from fastapi import HTTPException, Request
 from src.settings import get_settings
 
-async def get_current_user_id(request: Request) -> str:
+async def get_current_discord_id(request: Request) -> str:
     sid = request.cookies.get(get_settings().SESSION_COOKIE_NAME)
     if not sid:
         raise HTTPException(status_code=401, detail="Not logged in")
@@ -12,7 +12,7 @@ async def get_current_user_id(request: Request) -> str:
     # Optional: sliding expiration
     await store.touch(sid)
     request.state.session = session  # stash if handlers need more info
-    return session["user_id"]
+    return session["discord_id"]
 
 def require_csrf(request: Request):
     # For state-changing requests (POST/PUT/DELETE/PATCH)

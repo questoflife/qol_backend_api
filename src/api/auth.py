@@ -1,11 +1,9 @@
 import httpx
-from fastapi import APIRouter, Request, Response, HTTPException
+from fastapi import APIRouter, Request, HTTPException
 from authlib.integrations.starlette_client import OAuth
 from starlette.responses import RedirectResponse
 
-from src import settings
 from src.settings import get_settings
-from src.api.sessions import SessionStore
 
 router = APIRouter(prefix="", tags=["auth"])
 
@@ -19,27 +17,6 @@ oauth.register(
     client_kwargs={"scope": "identify"},
 )
 
-def set_session_cookie(response: Response, sid: str) -> None:
-    """ Cross-site cookie for different frontend domain"""
-    response.set_cookie(
-        key=get_settings().SESSION_COOKIE_NAME,
-        value=sid,
-        max_age=get_settings().SESSION_TTL_SECONDS,
-        httponly=True,
-        secure=True,
-        samesite="none",
-        path="/",
-        domain=None
-    )
-
-def clear_session_cookie(response: Response) -> None:
-    """ Clear session cookie """
-    response.delete_cookie(
-        key=get_settings().SESSION_COOKIE_NAME,
-        path="/",
-        domain=None
-    )
-
 
 @router.get("/login")
 async def login(request: Request):
@@ -52,7 +29,7 @@ async def login(request: Request):
 
 
 @router.get(get_settings().DISCORD_REDIRECT_PATH)
-async def oauth_callback(request: Request, response: Response):
+async def oauth_callback(request: Request):
     discord = oauth.create_client("discord")
     if discord is None:
         raise HTTPException(500, "Discord OAuth client not configured")
@@ -75,20 +52,20 @@ async def oauth_callback(request: Request, response: Response):
 
     discord_id = me["id"]
 
-    # Create server-side session in Redis
-    store: SessionStore = request.app.state.session_store
-    sid = await store.create(user_id=discord_id, discord_id=discord_id, token_meta=token)
+    # Create server-side session
+    sid = await request.app.state.session_store.create(discord_id=discord_id, token_meta=token)
 
-    # Set cookie and bounce back to your frontend
-    set_session_cookie(response, sid)
-    # Redirect to frontend (maybe a /dashboard)
+    # Store session ID in SessionMiddleware managed session
+    request.session["sid"] = sid
+    
+    # Redirect to frontend
     return RedirectResponse(url=f"{get_settings().FRONTEND_ORIGIN}/welcome", status_code=303)
 
 
 @router.post("/logout")
-async def logout(request: Request, response: Response):
-    sid = request.cookies.get(get_settings().SESSION_COOKIE_NAME)
+async def logout(request: Request):
+    sid = request.session.get("sid")
     if sid:
         await request.app.state.session_store.destroy(sid)
-    clear_session_cookie(response)
+    request.session.clear()
     return {"ok": True}

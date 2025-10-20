@@ -5,7 +5,7 @@ Provides endpoints for getting and setting user key-value pairs.
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.backend.auth import get_current_user
+from src.api.deps import get_current_discord_id
 from src.database.config import get_app_async_session
 from src.api.schemas import KeyValueIn, KeyValueOut
 from src.backend.service import get_user_key_value, set_user_key_value
@@ -15,7 +15,7 @@ router = APIRouter()
 @router.get("/user/dict/{key}", response_model=KeyValueOut)
 async def get_user_value(
     key: str,
-    current_user: str = Depends(get_current_user),
+    current_user: str = Depends(get_current_discord_id),
     session: AsyncSession = Depends(get_app_async_session)
 ) -> KeyValueOut:
     """
@@ -30,7 +30,7 @@ async def get_user_value(
 @router.post("/user/dict", response_model=None)
 async def set_user_value_endpoint(
     payload: KeyValueIn,
-    current_user: str = Depends(get_current_user),
+    current_user: str = Depends(get_current_discord_id),
     session: AsyncSession = Depends(get_app_async_session)
 ):
     """
