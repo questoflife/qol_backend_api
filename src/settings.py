@@ -11,12 +11,6 @@ class Settings(BaseSettings):
     # Discord OAuth app credentials
     DISCORD_CLIENT_ID: str
     DISCORD_CLIENT_SECRET: str
-    DISCORD_REDIRECT_PATH: str = "/oauth/callback"
-
-    # Session + security
-    SESSION_COOKIE_NAME: str
-    SESSION_TTL_SECONDS: int = 14 * 24 * 60 * 60  # 14 days
-    CSRF_HEADER_NAME: str = "X-CSRF-Token"
 
     # Security
     SECRET_KEY: str

@@ -3,6 +3,7 @@ Shared pytest fixtures for the Quest of Life Backend API tests.
 """
 import pytest
 import os
+from fastapi import Request
 
 from src.database.models import Base
 from tests.database_utils import (
@@ -12,6 +13,7 @@ from tests.database_utils import (
     drop_test_schema,
 )
 from src.database.config import get_app_async_session
+from src.api.deps import get_current_discord_id
 from src.app import app
 
 # Ensure tests are only run in the test environment
@@ -67,13 +69,22 @@ async def clean_db_session(clean_db, session_factory):
 @pytest.fixture
 async def clean_db_override_app_session(clean_db, session_factory):
     """
-    Sets up FastAPI dependency override to use a clean DB session per request during tests.
+    Sets up FastAPI dependency overrides for testing:
+    1. Uses a clean test DB session per request
+    2. Mocks authentication to return a test user (bypasses OAuth)
     Yields:
         None
     """
-    async def _override():
+    async def _override_session():
         async with session_factory() as session:
             yield session
-    app.dependency_overrides[get_app_async_session] = _override
+    
+    async def _override_auth(request: Request):
+        # Mock authentication - return a test Discord ID
+        # This bypasses the OAuth flow for testing
+        return "test_user_123"
+    
+    app.dependency_overrides[get_app_async_session] = _override_session
+    app.dependency_overrides[get_current_discord_id] = _override_auth
     yield
-    app.dependency_overrides.clear() 
+    app.dependency_overrides.clear()

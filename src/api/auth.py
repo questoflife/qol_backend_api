@@ -1,3 +1,4 @@
+import secrets
 import httpx
 from fastapi import APIRouter, Request, HTTPException
 from authlib.integrations.starlette_client import OAuth
@@ -24,11 +25,11 @@ async def login(request: Request):
     discord = oauth.create_client("discord")
     if discord is None:
         raise HTTPException(500, "Discord OAuth client not configured")
-    redirect_uri = f"{get_settings().API_BASE_URL}{get_settings().DISCORD_REDIRECT_PATH}"
+    redirect_uri = f"{get_settings().API_BASE_URL}/oauth/callback"
     return await discord.authorize_redirect(request, redirect_uri=redirect_uri)
 
 
-@router.get(get_settings().DISCORD_REDIRECT_PATH)
+@router.get("/oauth/callback")
 async def oauth_callback(request: Request):
     discord = oauth.create_client("discord")
     if discord is None:
@@ -52,11 +53,10 @@ async def oauth_callback(request: Request):
 
     discord_id = me["id"]
 
-    # Create server-side session
-    sid = await request.app.state.session_store.create(discord_id=discord_id, token_meta=token)
-
-    # Store session ID in SessionMiddleware managed session
-    request.session["sid"] = sid
+    # Store session data directly in SessionMiddleware
+    request.session["discord_id"] = discord_id
+    request.session["csrf"] = secrets.token_urlsafe(32)
+    request.session["token_meta"] = token
     
     # Redirect to frontend
     return RedirectResponse(url=f"{get_settings().FRONTEND_ORIGIN}/welcome", status_code=303)
@@ -64,8 +64,23 @@ async def oauth_callback(request: Request):
 
 @router.post("/logout")
 async def logout(request: Request):
-    sid = request.session.get("sid")
-    if sid:
-        await request.app.state.session_store.destroy(sid)
     request.session.clear()
     return {"ok": True}
+
+
+@router.get("/me")
+async def get_current_user(request: Request):
+    """
+    Get current user info including CSRF token.
+    Frontend needs this to get the CSRF token for state-changing requests.
+    """
+    discord_id = request.session.get("discord_id")
+    csrf = request.session.get("csrf")
+    
+    if not discord_id or not csrf:
+        raise HTTPException(status_code=401, detail="Not logged in")
+    
+    return {
+        "discord_id": discord_id,
+        "csrf_token": csrf
+    }
