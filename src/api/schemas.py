@@ -3,16 +3,8 @@ Pydantic schemas for request and response validation in the Quest of Life Backen
 """
 from pydantic import BaseModel
 
-class KeyValueIn(BaseModel):
+class Text(BaseModel):
     """
-    Request schema for setting a user key-value pair.
+    Request schema for setting or getting a user text.
     """
-    key: str
-    value: str
-
-class KeyValueOut(BaseModel):
-    """
-    Response schema for returning a user key-value pair.
-    """
-    key: str
-    value: str 
+    text: str

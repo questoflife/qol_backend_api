@@ -5,7 +5,7 @@ import pytest
 import os
 from fastapi import Request
 
-from src.database.models import Base
+from src.database.models import BaseModel
 from tests.database_utils import (
     create_pytest_engine_and_session_factory,
     _ensure_test_environment,
@@ -45,13 +45,13 @@ async def clean_db(test_db_session_scope, session_factory):
     """
     # Clean all tables before test
     async with session_factory() as session:
-        for table in reversed(Base.metadata.sorted_tables):
+        for table in reversed(BaseModel.metadata.sorted_tables):
             await session.execute(table.delete())
         await session.commit()
     yield
     # Clean all tables after test
     async with session_factory() as session:
-        for table in reversed(Base.metadata.sorted_tables):
+        for table in reversed(BaseModel.metadata.sorted_tables):
             await session.execute(table.delete())
         await session.commit()
 

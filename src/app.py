@@ -9,7 +9,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from src.settings import get_settings
 from src.api.auth import router as auth_router
-from src.api.user_dict import router as user_dict_router
+from src.api.user_values import router as user_values_router
 
 app = FastAPI()
 
@@ -32,4 +32,4 @@ app.add_middleware(
 
 
 app.include_router(auth_router)
-app.include_router(user_dict_router)
+app.include_router(user_values_router)

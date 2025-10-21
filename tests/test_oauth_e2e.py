@@ -160,18 +160,28 @@ async def test_oauth_with_api_calls(backend_server, discord_test_credentials):
                 assert me_response.status_code == 200
                 csrf_token = me_response.json()["csrf_token"]
                 
-                # Set a value with CSRF
+                # First create the user in the database
+                from src.database.models import UserValues
+                from src.database.config import get_app_async_session
+                async for session in get_app_async_session():
+                    discord_id = me_response.json()["discord_id"]
+                    user = UserValues(user_id=discord_id, text=None)
+                    session.add(user)
+                    await session.commit()
+                    break
+                
+                # Set text with CSRF
                 set_response = await client.post(
-                    "/user/dict",
-                    json={"key": "e2e_test", "value": "success"},
+                    "/user/text",
+                    json={"text": "e2e test success"},
                     headers={"X-CSRF-Token": csrf_token}
                 )
                 assert set_response.status_code == 200
                 
-                # Get the value back
-                get_response = await client.get("/user/dict/e2e_test")
+                # Get the text back
+                get_response = await client.get("/user/text")
                 assert get_response.status_code == 200
-                assert get_response.json()["value"] == "success"
+                assert get_response.json()["text"] == "e2e test success"
                 
         finally:
             await browser.close()

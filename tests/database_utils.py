@@ -7,7 +7,7 @@ non-test databases.
 """
 from src.settings import get_settings
 from src.database.config import create_app_async_engine, create_app_async_session_factory
-from src.database.models import Base
+from src.database.models import BaseModel
 
 
 def _ensure_test_environment():
@@ -50,7 +50,7 @@ async def create_test_schema_once():
     engine, _session_factory = create_pytest_engine_and_session_factory()
     try:
         async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
+            await conn.run_sync(BaseModel.metadata.create_all)
     finally:
         await engine.dispose()
 
@@ -61,6 +61,6 @@ async def drop_test_schema():
     engine, _session_factory = create_pytest_engine_and_session_factory()
     try:
         async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.drop_all)
+            await conn.run_sync(BaseModel.metadata.drop_all)
     finally:
         await engine.dispose()

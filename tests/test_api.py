@@ -7,98 +7,113 @@ import pytest
 from httpx import AsyncClient, ASGITransport
 
 from src.app import app
+from src.database.models import UserValues
 
 
 # --- Basic API functionality tests ---
 
 @pytest.mark.asyncio
-async def test_set_user_value(clean_db_override_app_session):
-    """Test setting a user value via API."""
+async def test_set_user_text(clean_db_override_app_session, session_factory):
+    """Test setting a user text via API."""
+    # Create user first
+    async with session_factory() as session:
+        user = UserValues(user_id="test_user_123", text=None)
+        session.add(user)
+        await session.commit()
+    
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         response = await client.post(
-            "/user/dict",
-            json={"key": "theme", "value": "dark"}
+            "/user/text",
+            json={"text": "My new text"}
         )
         
         assert response.status_code == 200
-        assert response.json() == {"message": "Value set successfully."}
+        assert response.json() == {"text": "My new text"}
 
 
 @pytest.mark.asyncio
-async def test_get_user_value(clean_db_override_app_session):
-    """Test getting a user value via API."""
+async def test_get_user_text(clean_db_override_app_session, session_factory):
+    """Test getting a user text via API."""
+    # Create user with text
+    async with session_factory() as session:
+        user = UserValues(user_id="test_user_123", text="Hello API")
+        session.add(user)
+        await session.commit()
+    
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        # First set a value
-        await client.post(
-            "/user/dict",
-            json={"key": "language", "value": "es"}
-        )
-        
-        # Then get it
-        response = await client.get("/user/dict/language")
+        response = await client.get("/user/text")
         
         assert response.status_code == 200
         data = response.json()
-        assert data["key"] == "language"
-        assert data["value"] == "es"
+        assert data["text"] == "Hello API"
 
 
 @pytest.mark.asyncio
-async def test_get_nonexistent_key(clean_db_override_app_session):
-    """Test getting a key that doesn't exist."""
+async def test_get_user_with_null_text(clean_db_override_app_session, session_factory):
+    """Test getting text when it's null (should return empty string)."""
+    # Create user with null text
+    async with session_factory() as session:
+        user = UserValues(user_id="test_user_123", text=None)
+        session.add(user)
+        await session.commit()
+    
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        response = await client.get("/user/dict/nonexistent_key")
+        response = await client.get("/user/text")
         
         assert response.status_code == 200
         data = response.json()
-        assert data["key"] == "nonexistent_key"
-        assert data["value"] == ""  # Empty string for non-existent keys
+        assert data["text"] == ""  # API converts None to empty string
 
 
 @pytest.mark.asyncio
-async def test_update_existing_key(clean_db_override_app_session):
-    """Test updating an existing key via API."""
+async def test_update_existing_text(clean_db_override_app_session, session_factory):
+    """Test updating an existing user's text via API."""
+    # Create user with initial text
+    async with session_factory() as session:
+        user = UserValues(user_id="test_user_123", text="Initial text")
+        session.add(user)
+        await session.commit()
+    
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        # Set initial value
-        await client.post(
-            "/user/dict",
-            json={"key": "notifications", "value": "disabled"}
-        )
-        
-        # Update the value
+        # Update the text
         response = await client.post(
-            "/user/dict",
-            json={"key": "notifications", "value": "enabled"}
+            "/user/text",
+            json={"text": "Updated text"}
         )
         
         assert response.status_code == 200
-        assert response.json() == {"message": "Value set successfully."}
+        assert response.json() == {"text": "Updated text"}
         
         # Verify the update
-        get_response = await client.get("/user/dict/notifications")
+        get_response = await client.get("/user/text")
         assert get_response.status_code == 200
         data = get_response.json()
-        assert data["key"] == "notifications"
-        assert data["value"] == "enabled"
+        assert data["text"] == "Updated text"
 
 
 # --- Concurrency and load testing ---
 
 @pytest.mark.asyncio
-async def test_concurrent_sets(clean_db_override_app_session):
-    """Test concurrent setting of different keys."""
+async def test_concurrent_sets(clean_db_override_app_session, session_factory):
+    """Test concurrent setting of user text."""
+    # Create user first
+    async with session_factory() as session:
+        user = UserValues(user_id="test_user_123", text=None)
+        session.add(user)
+        await session.commit()
+    
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        # Create multiple concurrent requests
-        async def set_key(key: str, value: str):
+        # Create multiple concurrent requests with different text values
+        async def set_text(value: str):
             response = await client.post(
-                "/user/dict",
-                json={"key": key, "value": value}
+                "/user/text",
+                json={"text": value}
             )
             return response.status_code
         
         # Run 10 concurrent set operations
         tasks = [
-            set_key(f"key_{i}", f"value_{i}")
+            set_text(f"Text version {i}")
             for i in range(10)
         ]
         
@@ -107,60 +122,63 @@ async def test_concurrent_sets(clean_db_override_app_session):
         # All should succeed
         assert all(status == 200 for status in results)
         
-        # Verify all values were set correctly
-        for i in range(10):
-            response = await client.get(f"/user/dict/key_{i}")
-            assert response.status_code == 200
-            data = response.json()
-            assert data["key"] == f"key_{i}"
-            assert data["value"] == f"value_{i}"
+        # Verify final value is one of the set values
+        response = await client.get("/user/text")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["text"].startswith("Text version ")
 
 
 @pytest.mark.asyncio
-async def test_concurrent_gets(clean_db_override_app_session):
-    """Test concurrent getting of the same key."""
+async def test_concurrent_gets(clean_db_override_app_session, session_factory):
+    """Test concurrent getting of the same text."""
+    # Create user with text
+    async with session_factory() as session:
+        user = UserValues(user_id="test_user_123", text="Concurrent test value")
+        session.add(user)
+        await session.commit()
+    
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        # Set a value first
-        await client.post(
-            "/user/dict",
-            json={"key": "concurrent_test", "value": "test_value"}
-        )
-        
         # Create multiple concurrent get requests
-        async def get_key():
-            response = await client.get("/user/dict/concurrent_test")
+        async def get_text():
+            response = await client.get("/user/text")
             return response.status_code, response.json()
         
         # Run 20 concurrent get operations
-        tasks = [get_key() for _ in range(20)]
+        tasks = [get_text() for _ in range(20)]
         results = await asyncio.gather(*tasks)
         
         # All should succeed and return the same value
         for status_code, data in results:
             assert status_code == 200
-            assert data["key"] == "concurrent_test"
-            assert data["value"] == "test_value"
+            assert data["text"] == "Concurrent test value"
 
 
 @pytest.mark.asyncio
-async def test_concurrent_set_get_race_condition(clean_db_override_app_session):
+async def test_concurrent_set_get_race_condition(clean_db_override_app_session, session_factory):
     """Test race condition between set and get operations."""
+    # Create user with initial text
+    async with session_factory() as session:
+        user = UserValues(user_id="test_user_123", text="Initial value")
+        session.add(user)
+        await session.commit()
+    
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        # Create a race condition: set and get the same key concurrently
-        async def set_key():
+        # Create a race condition: set and get the same text concurrently
+        async def set_text():
             response = await client.post(
-                "/user/dict",
-                json={"key": "race_test", "value": "new_value"}
+                "/user/text",
+                json={"text": "New value"}
             )
             return response.status_code
         
-        async def get_key():
-            response = await client.get("/user/dict/race_test")
+        async def get_text():
+            response = await client.get("/user/text")
             return response.status_code, response.json()
         
         # Run set and get concurrently
-        set_task = asyncio.create_task(set_key())
-        get_task = asyncio.create_task(get_key())
+        set_task = asyncio.create_task(set_text())
+        get_task = asyncio.create_task(get_text())
         
         set_result, get_result = await asyncio.gather(set_task, get_task)
         
@@ -170,33 +188,38 @@ async def test_concurrent_set_get_race_condition(clean_db_override_app_session):
         # Get should succeed (either get old value or new value)
         status_code, data = get_result
         assert status_code == 200
-        assert data["key"] == "race_test"
-        # Value could be either empty string (if get happened before set)
-        # or "new_value" (if get happened after set)
-        assert data["value"] in ["", "new_value"]
+        # Value could be either "Initial value" (if get happened before set)
+        # or "New value" (if get happened after set)
+        assert data["text"] in ["Initial value", "New value"]
 
 
 @pytest.mark.asyncio
-async def test_high_load_concurrent_operations(clean_db_override_app_session):
+async def test_high_load_concurrent_operations(clean_db_override_app_session, session_factory):
     """Test high load with mixed set/get operations."""
+    # Create user first
+    async with session_factory() as session:
+        user = UserValues(user_id="test_user_123", text="Initial")
+        session.add(user)
+        await session.commit()
+    
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         # Create a mix of set and get operations
         async def set_operation(i: int):
             response = await client.post(
-                "/user/dict",
-                json={"key": f"load_test_{i}", "value": f"value_{i}"}
+                "/user/text",
+                json={"text": f"Load test value {i}"}
             )
             return response.status_code
         
-        async def get_operation(i: int):
-            response = await client.get(f"/user/dict/load_test_{i}")
+        async def get_operation():
+            response = await client.get("/user/text")
             return response.status_code
         
         # Create 50 operations (25 sets, 25 gets)
         tasks = []
         for i in range(25):
             tasks.append(set_operation(i))
-            tasks.append(get_operation(i))
+            tasks.append(get_operation())
         
         # Run all operations concurrently
         results = await asyncio.gather(*tasks, return_exceptions=True)
@@ -211,26 +234,26 @@ async def test_high_load_concurrent_operations(clean_db_override_app_session):
 
 
 @pytest.mark.asyncio
-async def test_concurrent_updates_same_key(clean_db_override_app_session):
-    """Test concurrent updates to the same key."""
+async def test_concurrent_updates_same_text(clean_db_override_app_session, session_factory):
+    """Test concurrent updates to the same user's text."""
+    # Create user with initial text
+    async with session_factory() as session:
+        user = UserValues(user_id="test_user_123", text="Initial")
+        session.add(user)
+        await session.commit()
+    
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        # Set initial value
-        await client.post(
-            "/user/dict",
-            json={"key": "update_test", "value": "initial"}
-        )
-        
         # Create multiple concurrent updates
-        async def update_key(value: str):
+        async def update_text(value: str):
             response = await client.post(
-                "/user/dict",
-                json={"key": "update_test", "value": value}
+                "/user/text",
+                json={"text": value}
             )
             return response.status_code
         
         # Run 10 concurrent updates
         tasks = [
-            update_key(f"update_{i}")
+            update_text(f"Update {i}")
             for i in range(10)
         ]
         
@@ -240,12 +263,11 @@ async def test_concurrent_updates_same_key(clean_db_override_app_session):
         assert all(status == 200 for status in results)
         
         # Verify final value (should be one of the updates)
-        response = await client.get("/user/dict/update_test")
+        response = await client.get("/user/text")
         assert response.status_code == 200
         data = response.json()
-        assert data["key"] == "update_test"
         # Value should be one of the updates (last one to complete)
-        assert data["value"].startswith("update_")
+        assert data["text"].startswith("Update ")
 
 
 @pytest.mark.asyncio
@@ -253,7 +275,7 @@ async def test_error_handling_invalid_json(clean_db_override_app_session):
     """Test error handling for invalid JSON."""
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         response = await client.post(
-            "/user/dict",
+            "/user/text",
             content="invalid json",
             headers={"Content-Type": "application/json"}
         )
@@ -267,9 +289,34 @@ async def test_error_handling_missing_fields(clean_db_override_app_session):
     """Test error handling for missing required fields."""
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         response = await client.post(
-            "/user/dict",
-            json={"key": "test"}  # Missing "value" field
+            "/user/text",
+            json={}  # Missing "text" field
         )
         
         # Should return 422 (Unprocessable Entity) for missing fields
-        assert response.status_code == 422 
+        assert response.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_empty_text_is_valid(clean_db_override_app_session, session_factory):
+    """Test that empty string is a valid text value."""
+    # Create user first
+    async with session_factory() as session:
+        user = UserValues(user_id="test_user_123", text="Some text")
+        session.add(user)
+        await session.commit()
+    
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        # Set empty text
+        response = await client.post(
+            "/user/text",
+            json={"text": ""}
+        )
+        
+        assert response.status_code == 200
+        assert response.json() == {"text": ""}
+        
+        # Verify empty text was saved
+        get_response = await client.get("/user/text")
+        assert get_response.status_code == 200
+        assert get_response.json()["text"] == "" 

@@ -107,7 +107,7 @@ async def test_cors_configuration():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         # Make a preflight request
         response = await client.options(
-            "/user/dict",
+            "/user/text",
             headers={
                 "Origin": str(settings.FRONTEND_ORIGIN),
                 "Access-Control-Request-Method": "POST",
