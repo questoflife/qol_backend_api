@@ -5,7 +5,7 @@ Provides endpoints for getting and setting user key-value pairs.
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.api.deps import get_current_discord_id
+from src.api.deps import get_current_discord_id, require_csrf
 from src.database.config import get_app_async_session
 from src.api.schemas import Text
 from src.backend.commands import get_user_text, set_user_text
@@ -29,6 +29,7 @@ async def set_user_value(
     payload: Text,
     session: AsyncSession = Depends(get_app_async_session),
     user_id: str = Depends(get_current_discord_id),
+    _: bool = Depends(require_csrf),
 ) -> Text:
     """
     Set the stored text for the current user.

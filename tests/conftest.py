@@ -13,7 +13,7 @@ from tests.database_utils import (
     drop_test_schema,
 )
 from src.database.config import get_app_async_session
-from src.api.deps import get_current_discord_id
+from src.api.deps import get_current_discord_id, require_csrf
 from src.app import app
 
 # Ensure tests are only run in the test environment
@@ -72,6 +72,7 @@ async def clean_db_override_app_session(clean_db, session_factory):
     Sets up FastAPI dependency overrides for testing:
     1. Uses a clean test DB session per request
     2. Mocks authentication to return a test user (bypasses OAuth)
+    3. Mocks CSRF validation (always passes in tests)
     Yields:
         None
     """
@@ -84,7 +85,12 @@ async def clean_db_override_app_session(clean_db, session_factory):
         # This bypasses the OAuth flow for testing
         return "test_user_123"
     
+    async def _override_csrf(request: Request):
+        # Mock CSRF validation - always passes in tests
+        return True
+    
     app.dependency_overrides[get_app_async_session] = _override_session
     app.dependency_overrides[get_current_discord_id] = _override_auth
+    app.dependency_overrides[require_csrf] = _override_csrf
     yield
     app.dependency_overrides.clear()
