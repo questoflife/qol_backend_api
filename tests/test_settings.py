@@ -1,11 +1,15 @@
 """
 Test configuration settings.
 
-Environment Variables for Testing:
-----------------------------------
+E2E and integration tests are designed to run in CI/CD (Northflank) only.
+For local development, run unit tests (test_api.py, test_database.py).
+
+Environment Variables for E2E/Integration Tests:
+-------------------------------------------------
 
 REQUIRED (from src/settings.py):
-- FRONTEND_ORIGIN, API_BASE_URL
+- FRONTEND_ORIGIN=https://your-app.northflank.app
+- API_BASE_URL=https://your-app.northflank.app
 - DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET
 - SECRET_KEY
 - DB_USER, DB_PASSWORD, DB_HOST, DB_PORT, DB_NAME
@@ -13,7 +17,7 @@ REQUIRED (from src/settings.py):
 OPTIONAL - Integration Tests:
 - RUN_INTEGRATION_TESTS=true
 
-OPTIONAL - E2E Tests (browser automation):
+OPTIONAL - E2E Tests:
 - RUN_E2E_TESTS=true
 - DISCORD_TEST_EMAIL=your-test@email.com
 - DISCORD_TEST_PASSWORD=your-test-password

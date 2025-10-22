@@ -2,24 +2,26 @@
 
 ## Test Types
 
-### Unit Tests (Default)
+### Unit Tests (Default - Run Locally)
 - `test_database.py` - Database repository operations
 - `test_api.py` - API endpoints with mocked authentication
-- Always run, no setup needed
+- Always run, no setup needed beyond database connection
 
-### Integration Tests (Optional)
+### Integration Tests (CI/CD Only)
 - `test_oauth_integration.py` - Verifies OAuth configuration without browser
 - Enable: `RUN_INTEGRATION_TESTS=true`
 
-### E2E Tests (Optional)
-- `test_oauth_e2e.py` - Full Discord OAuth flow with real browser automation
+### E2E Tests (CI/CD Only)
+- `test_oauth_e2e.py` - Full Discord OAuth flow with browser automation
 - Enable: `RUN_E2E_TESTS=true` + Discord test account credentials
-- Uses Playwright in headless mode (no GUI needed in CI/CD)
+- Uses Playwright with headless Chromium (no GUI needed)
 
-## E2E Test Flow
+**Note:** E2E and integration tests are designed to run on Northflank, not locally.
 
-1. Opens browser (headless in CI)
-2. Navigates to `/login`
+## E2E Test Flow (Northflank)
+
+1. Starts server in container (headless Chromium, no GUI)
+2. Browser navigates to `/login`
 3. Logs into Discord with test credentials
 4. Authorizes OAuth app
 5. Verifies redirect and session cookie
@@ -28,33 +30,44 @@
 
 ## Local Setup
 
-### E2E Tests
+### Unit Tests Only
 ```bash
 # Install dependencies
 poetry install --with testing
-playwright install chromium
 
-# Set environment variables
-export RUN_E2E_TESTS=true
-export DISCORD_TEST_EMAIL=your-test@email.com
-export DISCORD_TEST_PASSWORD=your-test-password
-
-# Run tests
-pytest tests/test_oauth_e2e.py -v
+# Run unit tests (database + API)
+pytest tests/test_database.py tests/test_api.py -v
 ```
 
-**Important:** Create a dedicated Discord test account. Don't use your personal account (may trigger security alerts).
-
-### Integration Tests
-```bash
-export RUN_INTEGRATION_TESTS=true
-pytest tests/test_oauth_integration.py -v
-```
+**Note:** E2E and integration tests are not designed for local development.
 
 ### Run All Tests
 ```bash
-pytest  # Optional tests are skipped unless env vars are set
+pytest  # Unit tests always run; E2E/integration skipped unless env vars set
 ```
+
+## Docker/CI Testing
+
+### Testing Locally with Docker
+```bash
+# Run all tests (unit tests only by default)
+docker compose -p qol-testing \
+  -f docker-compose.yml \
+  -f dev/docker-compose.prod.db-override.yml \
+  run --rm --build testing pytest -v
+```
+
+### Northflank
+Set these environment variables in Northflank:
+- `RUN_E2E_TESTS=true`
+- `DISCORD_TEST_EMAIL=your-test-discord@email.com`
+- `DISCORD_TEST_PASSWORD=your-test-password`
+- `FRONTEND_ORIGIN=https://your-app.northflank.app`
+- `API_BASE_URL=https://your-app.northflank.app`
+
+Register `https://your-app.northflank.app/oauth/callback` in Discord OAuth app.
+
+Tests run automatically during build/test phase. E2E tests are skipped unless all required env vars are set.
 
 ## Environment Variables
 
@@ -73,32 +86,40 @@ Standard app configuration from `src/settings.py`:
 - `DISCORD_TEST_EMAIL` - Test Discord account email
 - `DISCORD_TEST_PASSWORD` - Test Discord account password
 
-## Docker/CI Setup
+## CI/CD Setup (Northflank)
 
-### Dockerfile
-Already configured in `testing` stage:
-- Chromium system dependencies (~150MB)
-- Playwright browser installation (~150MB)
+E2E and integration tests run in containerized environments. The E2E tests start their own server on `0.0.0.0:8000` and use Chromium for browser automation.
 
-### Testing Locally with Docker
+### Northflank Configuration
+
+**Environment Variables:**
 ```bash
-# Run all tests
-docker compose -p qol-testing \
-  -f docker-compose.yml \
-  -f dev/docker-compose.prod.db-override.yml \
-  run --rm --build testing pytest -v
+# Required
+FRONTEND_ORIGIN=https://your-app.northflank.app
+API_BASE_URL=https://your-app.northflank.app
+SECRET_KEY=your-secret-key
+DISCORD_CLIENT_ID=your-client-id
+DISCORD_CLIENT_SECRET=your-client-secret
 
-# Run only E2E tests
-docker compose -p qol-testing \
-  -f docker-compose.yml \
-  -f dev/docker-compose.prod.db-override.yml \
-  run --rm --build testing pytest tests/test_oauth_e2e.py -v
+# Database
+DB_HOST=db
+DB_PORT=3306
+DB_NAME=qol
+DB_USER=root
+DB_PASSWORD=your-db-password
+
+# E2E Tests (optional)
+RUN_E2E_TESTS=true
+DISCORD_TEST_EMAIL=your-test-discord@email.com
+DISCORD_TEST_PASSWORD=your-test-password
 ```
 
-### Northflank
-Everything is configured. Just add secrets:
-- `RUN_E2E_TESTS=true`
-- `DISCORD_TEST_EMAIL=your-test-discord@email.com`
-- `DISCORD_TEST_PASSWORD=your-test-password`
+**Discord OAuth App Setup:**
+Register `https://your-app.northflank.app/oauth/callback` as a redirect URI in your Discord application settings.
 
-Tests run automatically during build/test phase. E2E tests are skipped unless all three secrets are set.
+**How It Works:**
+1. Tests start a server on `0.0.0.0:8000` inside the container
+2. Browser navigates to `API_BASE_URL` (public Northflank URL)
+3. OAuth flow redirects to Discord and back to your callback
+4. Tests verify session management and API functionality
+5. If tests pass, main server can start (future enhancement)
