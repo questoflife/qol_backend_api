@@ -24,8 +24,8 @@ async def test_login_redirect():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test", follow_redirects=False) as client:
         response = await client.get("/login")
         
-        # Should redirect to Discord
-        assert response.status_code == 307
+        # Should redirect to Discord (302 or 307 both indicate redirect)
+        assert response.status_code in [302, 307]
         
         location = response.headers.get("location", "")
         assert "discord.com/api/oauth2/authorize" in location

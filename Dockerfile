@@ -128,10 +128,6 @@ RUN apt-get update && \
 # Copy virtual environment from builder stage
 COPY --from=testing-builder --link /venv/.venv /venv/.venv
 
-# Install Playwright browsers (Chromium for E2E tests)
-# Must be done after copying venv so playwright command is available
-RUN playwright install chromium
-
 # Copy application code and test files
 COPY src ./src/
 COPY tests ./tests/
@@ -144,8 +140,11 @@ COPY --chmod=0755 startup_with_testing.sh /usr/local/bin/
 USER root
 RUN chown -R appuser:appuser /qol_backend_api
 
-# Switch to non-root user for security
+# Switch to appuser BEFORE installing Playwright browsers
 USER appuser
+
+# Install Playwright browsers as appuser (so they're in the right home directory)
+RUN playwright install chromium
 
 # Add metadata labels
 LABEL org.opencontainers.image.title="${APP_NAME} - Testing" \
