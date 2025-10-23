@@ -38,16 +38,17 @@ def discord_test_credentials():
 async def backend_server():
     """
     Start backend server for E2E testing on 0.0.0.0:8000.
-    Returns API_BASE_URL for browser navigation.
+    Returns the URL for browser navigation.
     """
     from src.app import app
     
     api_base_url = str(get_settings().API_BASE_URL)
     
-    config = uvicorn.Config(app, host="0.0.0.0", port=8000, log_level="warning")
+    config = uvicorn.Config(app, host="0.0.0.0", port=8000, log_level="info")
     server = uvicorn.Server(config)
     server_task = asyncio.create_task(server.serve())
-    await asyncio.sleep(3)  # Wait for server startup
+    
+    await asyncio.sleep(5)
     
     yield api_base_url
     

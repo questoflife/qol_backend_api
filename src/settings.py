@@ -1,6 +1,6 @@
 from functools import lru_cache
 from pydantic_settings import BaseSettings
-from pydantic import AnyHttpUrl
+from pydantic import AnyHttpUrl, field_validator
 
 
 class Settings(BaseSettings):
@@ -22,6 +22,14 @@ class Settings(BaseSettings):
     DB_PORT: str
     DB_NAME: str
     DB_SSL_DISABLE_VERIFICATION: bool = False
+
+    @field_validator('FRONTEND_ORIGIN', 'API_BASE_URL', mode='after')
+    @classmethod
+    def strip_trailing_slash(cls, v):
+        """Remove trailing slash from URLs to avoid double-slash issues in path construction."""
+        if v is not None:
+            return str(v).rstrip('/')
+        return v
 
     @property
     def ASYNC_SERVER_URL(self) -> str:
