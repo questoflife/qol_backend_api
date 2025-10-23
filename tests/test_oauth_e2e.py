@@ -73,8 +73,8 @@ async def test_full_oauth_flow(backend_server, discord_test_credentials):
         page = await context.new_page()
         
         try:
-            # Navigate to login
-            await page.goto(f"{backend_server}/login")
+            # Navigate to login (don't wait for full load since /login immediately redirects)
+            await page.goto(f"{backend_server}/login", wait_until="commit")
             await page.wait_for_url("**/discord.com/**", timeout=10000)
             
             # Fill Discord credentials
@@ -140,8 +140,8 @@ async def test_oauth_with_api_calls(backend_server, discord_test_credentials):
         page = await context.new_page()
         
         try:
-            # Complete OAuth flow
-            await page.goto(f"{backend_server}/login")
+            # Complete OAuth flow (don't wait for full load since /login immediately redirects)
+            await page.goto(f"{backend_server}/login", wait_until="commit")
             await page.wait_for_url("**/discord.com/**", timeout=10000)
             
             await page.wait_for_selector('input[name="email"]', timeout=10000)
@@ -217,8 +217,8 @@ async def test_logout_clears_session(backend_server, discord_test_credentials):
         page = await context.new_page()
         
         try:
-            # Complete OAuth flow
-            await page.goto(f"{backend_server}/login")
+            # Complete OAuth flow (don't wait for full load since /login immediately redirects)
+            await page.goto(f"{backend_server}/login", wait_until="commit")
             await page.wait_for_url("**/discord.com/**", timeout=10000)
             
             await page.wait_for_selector('input[name="email"]', timeout=10000)
