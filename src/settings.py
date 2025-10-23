@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     # Public site (frontend) and API (this app) live on different domains
     FRONTEND_ORIGIN: AnyHttpUrl
     API_BASE_URL: AnyHttpUrl
+    LOGIN_REDIRECT: AnyHttpUrl
     
     # Discord OAuth app credentials
     DISCORD_CLIENT_ID: str
