@@ -105,17 +105,28 @@ async def test_user2_isolation(user1_updated, user2, clean_db_session):
 # ============================================================================
 
 @pytest.mark.asyncio
-async def test_get_nonexistent_user_raises_error(clean_db_session):
-    """Test getting text for a user that doesn't exist raises UserNotFoundError."""
-    with pytest.raises(UserNotFoundError):
-        await get_user_value(clean_db_session, "nonexistent_user", "text")
+async def test_get_nonexistent_user_auto_creates(clean_db_session):
+    """Test getting text for a user that doesn't exist auto-creates the user."""
+    value = await get_user_value(clean_db_session, "nonexistent_user", "text")
+    assert value is None
+    
+    # Verify the user was created
+    result = await clean_db_session.execute(
+        select(UserValues).where(UserValues.user_id == "nonexistent_user")
+    )
+    user_records = result.scalars().all()
+    assert len(user_records) == 1
+    assert user_records[0].text is None
 
 
 @pytest.mark.asyncio
-async def test_set_nonexistent_user_raises_error(clean_db_session):
-    """Test setting text for a user that doesn't exist raises UserNotFoundError."""
-    with pytest.raises(UserNotFoundError):
-        await set_user_value(clean_db_session, "nonexistent_user", "text", "some value")
+async def test_set_nonexistent_user_auto_creates(clean_db_session):
+    """Test setting text for a user that doesn't exist auto-creates the user."""
+    await set_user_value(clean_db_session, "new_user", "text", "some value")
+    
+    # Verify the user was created and value was set
+    value = await get_user_value(clean_db_session, "new_user", "text")
+    assert value == "some value"
 
 
 @pytest.mark.asyncio
@@ -159,14 +170,31 @@ async def test_text_can_be_null(clean_db_session):
 @pytest.mark.asyncio
 async def test_private_commands_directly(clean_db_session):
     """Test using private commands (get_user_value/set_user_value) directly."""
-    # Create user
-    user = UserValues(user_id="user_private", text=None)
-    clean_db_session.add(user)
-    await clean_db_session.commit()
-    
-    # Set text using private command
+    # Set text using private command (should auto-create user)
     await set_user_value(clean_db_session, "user_private", "text", "Private Value")
     
     # Get text using private command
     value = await get_user_value(clean_db_session, "user_private", "text")
-    assert value == "Private Value" 
+    assert value == "Private Value"
+
+
+@pytest.mark.asyncio
+async def test_auto_create_on_get_then_set(clean_db_session):
+    """Test that auto-created user on get can then be updated with set."""
+    # First access via get (auto-creates with None)
+    value = await get_user_value(clean_db_session, "auto_user", "text")
+    assert value is None
+    
+    # Now set a value
+    await set_user_value(clean_db_session, "auto_user", "text", "Updated")
+    
+    # Verify it was updated
+    value = await get_user_value(clean_db_session, "auto_user", "text")
+    assert value == "Updated"
+    
+    # Verify only one record exists
+    result = await clean_db_session.execute(
+        select(UserValues).where(UserValues.user_id == "auto_user")
+    )
+    user_records = result.scalars().all()
+    assert len(user_records) == 1 
