@@ -8,7 +8,7 @@ from httpx import AsyncClient, ASGITransport
 
 from src.app import app
 from src.settings import get_settings
-from tests.test_settings import get_test_settings
+from tests.settings import get_test_settings
 
 
 pytestmark = pytest.mark.skipif(
