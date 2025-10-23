@@ -24,7 +24,7 @@ async def get_user_value(
     value = value if value is not None else ""
     return Text(text=value)
 
-@router.post("/user/text", response_model=Text)
+@router.put("/user/text", response_model=Text)
 async def set_user_value(
     payload: Text,
     session: AsyncSession = Depends(get_app_async_session),

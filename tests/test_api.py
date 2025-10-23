@@ -22,7 +22,7 @@ async def test_set_user_text(clean_db_override_app_session, session_factory):
         await session.commit()
     
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        response = await client.post(
+        response = await client.put(
             "/user/text",
             json={"text": "My new text"}
         )
@@ -76,7 +76,7 @@ async def test_update_existing_text(clean_db_override_app_session, session_facto
     
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         # Update the text
-        response = await client.post(
+        response = await client.put(
             "/user/text",
             json={"text": "Updated text"}
         )
@@ -105,7 +105,7 @@ async def test_concurrent_sets(clean_db_override_app_session, session_factory):
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         # Create multiple concurrent requests with different text values
         async def set_text(value: str):
-            response = await client.post(
+            response = await client.put(
                 "/user/text",
                 json={"text": value}
             )
@@ -166,7 +166,7 @@ async def test_concurrent_set_get_race_condition(clean_db_override_app_session, 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         # Create a race condition: set and get the same text concurrently
         async def set_text():
-            response = await client.post(
+            response = await client.put(
                 "/user/text",
                 json={"text": "New value"}
             )
@@ -205,7 +205,7 @@ async def test_high_load_concurrent_operations(clean_db_override_app_session, se
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         # Create a mix of set and get operations
         async def set_operation(i: int):
-            response = await client.post(
+            response = await client.put(
                 "/user/text",
                 json={"text": f"Load test value {i}"}
             )
@@ -245,7 +245,7 @@ async def test_concurrent_updates_same_text(clean_db_override_app_session, sessi
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         # Create multiple concurrent updates
         async def update_text(value: str):
-            response = await client.post(
+            response = await client.put(
                 "/user/text",
                 json={"text": value}
             )
@@ -274,7 +274,7 @@ async def test_concurrent_updates_same_text(clean_db_override_app_session, sessi
 async def test_error_handling_invalid_json(clean_db_override_app_session):
     """Test error handling for invalid JSON."""
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        response = await client.post(
+        response = await client.put(
             "/user/text",
             content="invalid json",
             headers={"Content-Type": "application/json"}
@@ -288,7 +288,7 @@ async def test_error_handling_invalid_json(clean_db_override_app_session):
 async def test_error_handling_missing_fields(clean_db_override_app_session):
     """Test error handling for missing required fields."""
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        response = await client.post(
+        response = await client.put(
             "/user/text",
             json={}  # Missing "text" field
         )
@@ -308,7 +308,7 @@ async def test_empty_text_is_valid(clean_db_override_app_session, session_factor
     
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         # Set empty text
-        response = await client.post(
+        response = await client.put(
             "/user/text",
             json={"text": ""}
         )
