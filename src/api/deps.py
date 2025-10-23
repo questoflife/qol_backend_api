@@ -1,3 +1,4 @@
+import secrets
 from fastapi import HTTPException, Request
 from slowapi import Limiter
 from slowapi.util import get_remote_address
@@ -23,6 +24,7 @@ async def require_csrf(request: Request) -> bool:
     Dependency for state-changing requests (POST/PUT/DELETE/PATCH).
     Validates that the CSRF token in the header matches the one in the session.
     This prevents cross-site request forgery attacks.
+    Uses constant-time comparison to prevent timing attacks.
     """
     session_csrf = request.session.get("csrf")
     header_csrf = request.headers.get("X-CSRF-Token")
@@ -30,7 +32,8 @@ async def require_csrf(request: Request) -> bool:
     if not session_csrf or not header_csrf:
         raise HTTPException(status_code=403, detail="Missing CSRF token")
     
-    if session_csrf != header_csrf:
+    # Use constant-time comparison to prevent timing attacks
+    if not secrets.compare_digest(session_csrf, header_csrf):
         raise HTTPException(status_code=403, detail="Invalid CSRF token")
     
     return True
