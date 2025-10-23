@@ -425,3 +425,144 @@ async def test_rate_limit_per_ip_isolation(clean_db_override_app_session, sessio
         # 31st request should be rate limited
         response = await client.put("/user/text", json={"text": "Over limit"})
         assert response.status_code == 429
+
+
+# --- Input validation and security tests ---
+
+@pytest.mark.asyncio
+async def test_text_length_limit(clean_db_override_app_session, session_factory):
+    """Test that text input respects the 10KB limit."""
+    # Create user first
+    async with session_factory() as session:
+        user = UserValues(user_id="test_user_123", text=None)
+        session.add(user)
+        await session.commit()
+    
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        # Test text at the limit (10KB = 10,000 characters)
+        large_text = "A" * 10_000
+        response = await client.put("/user/text", json={"text": large_text})
+        assert response.status_code == 200
+        
+        # Test text over the limit
+        oversized_text = "A" * 10_001
+        response = await client.put("/user/text", json={"text": oversized_text})
+        assert response.status_code == 422  # Validation error
+
+
+@pytest.mark.asyncio
+async def test_text_validation_null_bytes(clean_db_override_app_session, session_factory):
+    """Test that text with null bytes is rejected."""
+    # Create user first
+    async with session_factory() as session:
+        user = UserValues(user_id="test_user_123", text=None)
+        session.add(user)
+        await session.commit()
+    
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        # Test text with null bytes
+        text_with_nulls = "Hello\x00World"
+        response = await client.put("/user/text", json={"text": text_with_nulls})
+        assert response.status_code == 422  # Validation error
+        
+        error_detail = response.json()
+        assert "null bytes" in str(error_detail).lower()
+
+
+@pytest.mark.asyncio
+async def test_text_validation_excessive_control_chars(clean_db_override_app_session, session_factory):
+    """Test that text with excessive control characters is rejected."""
+    # Create user first
+    async with session_factory() as session:
+        user = UserValues(user_id="test_user_123", text=None)
+        session.add(user)
+        await session.commit()
+    
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        # Test text with many control characters (15 > 10 limit)
+        control_chars = "".join(chr(i) for i in range(1, 16))  # 15 control chars
+        bad_text = f"Hello{control_chars}World"
+        response = await client.put("/user/text", json={"text": bad_text})
+        assert response.status_code == 422  # Validation error
+        
+        error_detail = response.json()
+        assert "control characters" in str(error_detail).lower()
+
+
+@pytest.mark.asyncio
+async def test_text_validation_allows_newlines_tabs(clean_db_override_app_session, session_factory):
+    """Test that normal newlines and tabs are allowed."""
+    # Create user first
+    async with session_factory() as session:
+        user = UserValues(user_id="test_user_123", text=None)
+        session.add(user)
+        await session.commit()
+    
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        # Test text with newlines and tabs
+        good_text = "Hello\nWorld\t\rTest"
+        response = await client.put("/user/text", json={"text": good_text})
+        assert response.status_code == 200
+        assert response.json()["text"] == "Hello\nWorld\t\rTest"
+
+
+@pytest.mark.asyncio
+async def test_text_whitespace_trimming(clean_db_override_app_session, session_factory):
+    """Test that leading/trailing whitespace is trimmed."""
+    # Create user first
+    async with session_factory() as session:
+        user = UserValues(user_id="test_user_123", text=None)
+        session.add(user)
+        await session.commit()
+    
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        # Test text with leading/trailing whitespace
+        text_with_whitespace = "   Hello World   "
+        response = await client.put("/user/text", json={"text": text_with_whitespace})
+        assert response.status_code == 200
+        assert response.json()["text"] == "Hello World"  # Trimmed
+
+
+@pytest.mark.asyncio
+async def test_security_headers_present(clean_db_override_app_session):
+    """Test that security headers are added to responses."""
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.get("/user/text")
+        
+        # Check for security headers appropriate for APIs
+        assert response.headers.get("X-Content-Type-Options") == "nosniff"
+        assert response.headers.get("X-Frame-Options") == "DENY"
+        assert response.headers.get("Strict-Transport-Security") == "max-age=31536000; includeSubDomains"
+        assert response.headers.get("Referrer-Policy") == "strict-origin-when-cross-origin"
+        
+        # Check for cache control headers (prevent caching sensitive API data)
+        assert "no-store" in response.headers.get("Cache-Control", "")
+        assert "no-cache" in response.headers.get("Cache-Control", "")
+        assert response.headers.get("Pragma") == "no-cache"
+        assert response.headers.get("Expires") == "0"
+
+
+@pytest.mark.asyncio
+async def test_request_size_limit_middleware(clean_db_override_app_session, session_factory):
+    """Test that request size limiting middleware works."""
+    # Create user first
+    async with session_factory() as session:
+        user = UserValues(user_id="test_user_123", text=None)
+        session.add(user)
+        await session.commit()
+    
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        # Create a request that would be large but within text validation limit
+        # but test the middleware directly with Content-Length header
+        
+        # Simulate a request with Content-Length > 50KB (our middleware limit)
+        headers = {"Content-Length": "60000"}  # 60KB
+        
+        # This should be blocked by middleware before reaching validation
+        response = await client.put(
+            "/user/text", 
+            json={"text": "small text"},
+            headers=headers
+        )
+        assert response.status_code == 413  # Request Entity Too Large
+        assert "too large" in response.json()["detail"].lower()
