@@ -5,6 +5,7 @@ from authlib.integrations.starlette_client import OAuth
 from starlette.responses import RedirectResponse
 
 from src.settings import get_settings
+from src.api.deps import limiter
 
 router = APIRouter(prefix="", tags=["auth"])
 
@@ -20,6 +21,7 @@ oauth.register(
 
 
 @router.get("/login")
+@limiter.limit("5/minute")  # Limit login attempts to prevent brute force
 async def login(request: Request):
     # Authlib adds state; PKCE is automatically supported in the client flow
     discord = oauth.create_client("discord")
@@ -30,6 +32,7 @@ async def login(request: Request):
 
 
 @router.get("/oauth/callback")
+@limiter.limit("10/minute")  # Limit OAuth callbacks to prevent abuse
 async def oauth_callback(request: Request):
     discord = oauth.create_client("discord")
     if discord is None:
@@ -63,12 +66,14 @@ async def oauth_callback(request: Request):
 
 
 @router.post("/logout")
+@limiter.limit("10/minute")  # Limit logout requests
 async def logout(request: Request):
     request.session.clear()
     return {"ok": True}
 
 
 @router.get("/me")
+@limiter.limit("30/minute")  # More generous limit for checking auth status
 async def get_current_user(request: Request):
     """
     Get current user info including CSRF token.

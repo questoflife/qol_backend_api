@@ -1,4 +1,10 @@
 from fastapi import HTTPException, Request
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+
+
+# Initialize single rate limiter instance for the entire application
+limiter = Limiter(key_func=get_remote_address)
 
 
 async def get_current_discord_id(request: Request) -> str:

@@ -319,4 +319,109 @@ async def test_empty_text_is_valid(clean_db_override_app_session, session_factor
         # Verify empty text was saved
         get_response = await client.get("/user/text")
         assert get_response.status_code == 200
-        assert get_response.json()["text"] == "" 
+        assert get_response.json()["text"] == ""
+
+
+# --- Rate limiting tests ---
+
+@pytest.mark.asyncio
+async def test_rate_limit_on_put_endpoint(clean_db_override_app_session, session_factory):
+    """Test that rate limiting is enforced on PUT /user/text endpoint (30 requests/minute)."""
+    # Create user first
+    async with session_factory() as session:
+        user = UserValues(user_id="test_user_123", text=None)
+        session.add(user)
+        await session.commit()
+    
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        # Make requests up to the limit (30/minute for PUT)
+        success_count = 0
+        rate_limited = False
+        
+        for i in range(35):  # Try 35 requests (should hit limit at 31)
+            response = await client.put(
+                "/user/text",
+                json={"text": f"Test {i}"}
+            )
+            
+            if response.status_code == 200:
+                success_count += 1
+            elif response.status_code == 429:  # Too Many Requests
+                rate_limited = True
+                break
+        
+        # Should have succeeded for the first 30 and been rate limited after
+        assert success_count == 30, f"Expected 30 successful requests, got {success_count}"
+        assert rate_limited, "Expected to hit rate limit (429) but didn't"
+
+
+@pytest.mark.asyncio
+async def test_rate_limit_on_get_endpoint(clean_db_override_app_session, session_factory):
+    """Test that rate limiting is enforced on GET /user/text endpoint (60 requests/minute)."""
+    # Create user with text
+    async with session_factory() as session:
+        user = UserValues(user_id="test_user_123", text="Test value")
+        session.add(user)
+        await session.commit()
+    
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        # Make requests up to the limit (60/minute for GET)
+        success_count = 0
+        rate_limited = False
+        
+        for i in range(65):  # Try 65 requests (should hit limit at 61)
+            response = await client.get("/user/text")
+            
+            if response.status_code == 200:
+                success_count += 1
+            elif response.status_code == 429:  # Too Many Requests
+                rate_limited = True
+                break
+        
+        # Should have succeeded for the first 60 and been rate limited after
+        assert success_count == 60, f"Expected 60 successful requests, got {success_count}"
+        assert rate_limited, "Expected to hit rate limit (429) but didn't"
+
+
+@pytest.mark.asyncio
+async def test_rate_limit_response_format(clean_db_override_app_session, session_factory):
+    """Test that rate limit response includes proper error information."""
+    # Create user first
+    async with session_factory() as session:
+        user = UserValues(user_id="test_user_123", text=None)
+        session.add(user)
+        await session.commit()
+    
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        # Exhaust the rate limit
+        for i in range(30):
+            await client.put("/user/text", json={"text": f"Test {i}"})
+        
+        # Next request should be rate limited
+        response = await client.put("/user/text", json={"text": "Over limit"})
+        
+        assert response.status_code == 429
+        # slowapi returns plain text error message by default
+        assert "rate limit" in response.text.lower() or "too many" in response.text.lower()
+
+
+@pytest.mark.asyncio
+async def test_rate_limit_per_ip_isolation(clean_db_override_app_session, session_factory):
+    """Test that rate limits are tracked per IP address."""
+    # Create user first
+    async with session_factory() as session:
+        user = UserValues(user_id="test_user_123", text=None)
+        session.add(user)
+        await session.commit()
+    
+    # Note: In test environment, all requests come from the same test client,
+    # so they share the same IP. This test verifies the rate limit applies to that IP.
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        # Make 30 PUT requests (reaching the limit)
+        for i in range(30):
+            response = await client.put("/user/text", json={"text": f"Test {i}"})
+            assert response.status_code == 200
+        
+        # 31st request should be rate limited
+        response = await client.put("/user/text", json={"text": "Over limit"})
+        assert response.status_code == 429

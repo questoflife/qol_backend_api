@@ -4,11 +4,14 @@ Defines API endpoints and wires dependencies.
 """
 import os
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware 
 from starlette.middleware.sessions import SessionMiddleware
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 
 from src.settings import get_settings
+from src.api.deps import limiter
 from src.api.auth import router as auth_router
 from src.api.user_values import router as user_values_router
 from src.database.config import create_test_tables_if_not_exist
@@ -29,6 +32,11 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+
+# Add rate limiter state and exception handler
+# Note: app.state.limiter is required by slowapi to access the limiter instance
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.add_middleware(
     CORSMiddleware,

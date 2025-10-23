@@ -73,6 +73,7 @@ async def clean_db_override_app_session(clean_db, session_factory):
     1. Uses a clean test DB session per request
     2. Mocks authentication to return a test user (bypasses OAuth)
     3. Mocks CSRF validation (always passes in tests)
+    4. Clears rate limiter state between tests
     Yields:
         None
     """
@@ -89,8 +90,15 @@ async def clean_db_override_app_session(clean_db, session_factory):
         # Mock CSRF validation - always passes in tests
         return True
     
+    # Clear rate limiter state before each test
+    from src.api.deps import limiter
+    limiter.reset()
+    
     app.dependency_overrides[get_app_async_session] = _override_session
     app.dependency_overrides[get_current_discord_id] = _override_auth
     app.dependency_overrides[require_csrf] = _override_csrf
     yield
     app.dependency_overrides.clear()
+    
+    # Clear rate limiter state after each test as well
+    limiter.reset()
