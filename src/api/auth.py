@@ -59,7 +59,7 @@ async def oauth_callback(request: Request):
     request.session["token_meta"] = token
     
     # Redirect to frontend
-    return RedirectResponse(url=f"{get_settings().FRONTEND_ORIGIN}/welcome", status_code=303)
+    return RedirectResponse(url=f"{get_settings().FRONTEND_ORIGIN}/api-test.html", status_code=303)
 
 
 @router.post("/logout")
