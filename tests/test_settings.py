@@ -1,11 +1,11 @@
 """
 Test configuration settings.
 
-E2E and integration tests are designed to run in CI/CD (Northflank) only.
+Integration tests are designed to run in CI/CD (Northflank) environments.
 For local development, run unit tests (test_api.py, test_database.py).
 
-Environment Variables for E2E/Integration Tests:
--------------------------------------------------
+Environment Variables for Integration Tests:
+---------------------------------------------
 
 REQUIRED (from src/settings.py):
 - FRONTEND_ORIGIN=https://your-app.northflank.app
@@ -16,11 +16,6 @@ REQUIRED (from src/settings.py):
 
 OPTIONAL - Integration Tests:
 - RUN_INTEGRATION_TESTS=true
-
-OPTIONAL - E2E Tests:
-- RUN_E2E_TESTS=true
-- DISCORD_TEST_EMAIL=your-test@email.com
-- DISCORD_TEST_PASSWORD=your-test-password
 """
 import os
 from typing import Optional
@@ -31,9 +26,6 @@ class TestSettings(BaseSettings):
     """Test-specific configuration."""
     
     RUN_INTEGRATION_TESTS: bool = False
-    RUN_E2E_TESTS: bool = False
-    DISCORD_TEST_EMAIL: Optional[str] = None
-    DISCORD_TEST_PASSWORD: Optional[str] = None
 
 
 _settings: Optional[TestSettings] = None
@@ -45,17 +37,3 @@ def get_test_settings() -> TestSettings:
     if _settings is None:
         _settings = TestSettings()  # type: ignore[call-arg]
     return _settings
-
-
-def get_discord_test_credentials() -> dict[str, str]:
-    """Get Discord test account credentials."""
-    settings = get_test_settings()
-    
-    if settings.RUN_E2E_TESTS and (not settings.DISCORD_TEST_EMAIL or not settings.DISCORD_TEST_PASSWORD):
-        raise ValueError("E2E tests require DISCORD_TEST_EMAIL and DISCORD_TEST_PASSWORD")
-    
-    return {
-        "email": settings.DISCORD_TEST_EMAIL or "",
-        "password": settings.DISCORD_TEST_PASSWORD or ""
-    }
-

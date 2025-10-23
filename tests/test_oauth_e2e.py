@@ -7,8 +7,9 @@ For local development, run unit tests (test_api.py, test_database.py) instead.
 Requirements:
 - RUN_E2E_TESTS=true
 - DISCORD_TEST_EMAIL and DISCORD_TEST_PASSWORD
-- FRONTEND_ORIGIN and API_BASE_URL (set to Northflank URL)
+- FRONTEND_ORIGIN and API_BASE_URL (set to Northflank public URL)
 - Playwright: included in testing dependencies
+- Discord OAuth app redirect URI: https://your-public-url.code.run/oauth/callback
 
 The tests start a server on 0.0.0.0:8000 inside the container,
 accessible via the public Northflank URL specified in API_BASE_URL.
@@ -38,7 +39,7 @@ def discord_test_credentials():
 async def backend_server():
     """
     Start backend server for E2E testing on 0.0.0.0:8000.
-    Returns the URL for browser navigation.
+    Returns the public API_BASE_URL for browser navigation.
     """
     from src.app import app
     
