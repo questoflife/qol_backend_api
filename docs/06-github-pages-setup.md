@@ -11,7 +11,9 @@
 ## Northflank Environment Variables
 
 ```bash
-FRONTEND_ORIGIN=https://questoflife.github.io/qol_website_dev
+# Frontend URL (GitHub Pages origin - no path, no trailing slash)
+FRONTEND_ORIGIN=https://questoflife.github.io
+
 API_BASE_URL=<YOUR_BACKEND_URL>
 DISCORD_CLIENT_ID=<your_client_id>
 DISCORD_CLIENT_SECRET=<your_client_secret>
@@ -44,6 +46,6 @@ const API_BASE = '<YOUR_BACKEND_URL>';
 
 ## Troubleshooting
 
-- **Cookie issues**: Verify `FRONTEND_ORIGIN` has no trailing slash
-- **CORS errors**: Check browser console, verify environment variables match
+- **Cookie issues**: Verify `FRONTEND_ORIGIN=https://questoflife.github.io` (base domain only, no path, no trailing slash)
+- **CORS errors**: Browser origin is the base domain, not the subdirectory. Check browser console for actual origin.
 - **401 errors**: Session expired or cookies not sent - check `credentials: 'include'` in fetch calls

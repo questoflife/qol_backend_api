@@ -3,6 +3,7 @@ Main FastAPI application for the Quest of Life Backend API.
 Defines API endpoints and wires dependencies.
 """
 import os
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware 
 from starlette.middleware.sessions import SessionMiddleware
@@ -10,8 +11,24 @@ from starlette.middleware.sessions import SessionMiddleware
 from src.settings import get_settings
 from src.api.auth import router as auth_router
 from src.api.user_values import router as user_values_router
+from src.database.config import create_test_tables_if_not_exist
 
-app = FastAPI()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    Application lifespan: runs on startup and shutdown.
+    Creates database tables on startup if they don't exist.
+    """
+    # Startup: create tables if they don't exist
+    await create_test_tables_if_not_exist()
+    
+    yield
+    
+    # Shutdown: nothing to do
+
+
+app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,

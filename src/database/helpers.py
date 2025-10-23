@@ -21,5 +21,3 @@ async def fetch_column(model, column: str) -> Any:
     if column not in mapper.columns:
         raise ColumnNotFoundError(model.__name__, column)
     return mapper.columns[column]
-
-

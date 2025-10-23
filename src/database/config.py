@@ -64,3 +64,24 @@ async def get_app_async_session() -> AsyncGenerator[AsyncSession, None]:
     session_factory = get_cached_app_async_session_factory()
     async with session_factory() as session:
         yield session
+
+
+async def create_test_tables_if_not_exist():
+    """
+    Create all database tables if they don't already exist.
+    
+    SAFETY: Only runs if DB_NAME contains 'test'.
+    
+    This is idempotent - it will only create tables that don't exist.
+    
+    Raises:
+        RuntimeError: If DB_NAME does not contain 'test'
+    """
+    from src.database.models import BaseModel
+    from tests.database_utils import _ensure_test_environment
+    
+    _ensure_test_environment()
+    
+    engine = get_cached_app_async_engine()
+    async with engine.begin() as conn:
+        await conn.run_sync(BaseModel.metadata.create_all)
