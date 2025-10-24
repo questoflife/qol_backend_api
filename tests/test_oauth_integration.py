@@ -76,26 +76,40 @@ async def test_logout():
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_oauth_callback_without_code():
-    """Test that /oauth/callback fails without a code parameter."""
+    """Test that /oauth/callback redirects to login when code parameter is missing."""
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test", follow_redirects=False) as client:
         # Call callback without code parameter
         response = await client.get("/oauth/callback")
         
-        # Authlib will raise an error for missing code
-        assert response.status_code in [400, 422, 500]  # Bad request, validation error, or server error
+        # Should redirect back to LOGIN_REDIRECT instead of showing error
+        assert response.status_code == 303
+        assert response.headers.get("location") == str(get_settings().LOGIN_REDIRECT)
 
 
 @pytest.mark.integration  
 @pytest.mark.asyncio
 async def test_oauth_callback_with_invalid_code():
-    """Test that /oauth/callback fails with an invalid code."""
+    """Test that /oauth/callback redirects to login when token exchange fails."""
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test", follow_redirects=False) as client:
         # Call callback with invalid code
         response = await client.get("/oauth/callback?code=invalid_code_12345&state=test_state")
         
-        # Should fail during token exchange
-        assert response.status_code == 400
-        assert "OAuth exchange failed" in response.json()["detail"]
+        # Should redirect back to LOGIN_REDIRECT instead of showing error
+        assert response.status_code == 303
+        assert response.headers.get("location") == str(get_settings().LOGIN_REDIRECT)
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_oauth_callback_with_error_parameter():
+    """Test that /oauth/callback redirects to login when user cancels (error parameter present)."""
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test", follow_redirects=False) as client:
+        # Simulate Discord redirect when user cancels authorization
+        response = await client.get("/oauth/callback?error=access_denied&error_description=The+resource+owner+or+authorization+server+denied+the+request&state=test_state")
+        
+        # Should redirect back to LOGIN_REDIRECT
+        assert response.status_code == 303
+        assert response.headers.get("location") == str(get_settings().LOGIN_REDIRECT)
 
 
 @pytest.mark.integration
