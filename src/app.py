@@ -4,18 +4,21 @@ Defines API endpoints and wires dependencies.
 """
 import os
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware 
 from fastapi.responses import JSONResponse
 from starlette.middleware.sessions import SessionMiddleware
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.settings import get_settings
 from src.api.deps import limiter
 from src.api.auth import router as auth_router
 from src.api.user_values import router as user_values_router
-from src.database.config import create_test_tables_if_not_exist
+from src.database.config import create_test_tables_if_not_exist, get_app_async_session
+from src.database.errors import DatabaseError
 
 
 @asynccontextmanager
@@ -40,6 +43,15 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore[arg-type]
 
 
+@app.exception_handler(DatabaseError)
+async def database_error_handler(request: Request, exc: DatabaseError):
+    """Handle database errors gracefully with user-friendly messages."""
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Database operation failed. Please try again."}
+    )
+
+
 @app.middleware("http")
 async def add_security_headers(request: Request, call_next):
     """Add security headers to all responses."""
@@ -50,6 +62,7 @@ async def add_security_headers(request: Request, call_next):
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none'"
     
     # Apply strict cache control to sensitive endpoints (user data, auth)
     # Skip for future public/static endpoints (health checks, docs, etc.)
@@ -114,3 +127,22 @@ app.add_middleware(
 
 app.include_router(auth_router)
 app.include_router(user_values_router)
+
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint for load balancers and container orchestration."""
+    return {"status": "healthy"}
+
+
+@app.get("/readiness")
+async def readiness_check(session: AsyncSession = Depends(get_app_async_session)):
+    """Readiness check - verifies database connectivity."""
+    try:
+        await session.execute(text("SELECT 1"))
+        return {"status": "ready"}
+    except Exception:
+        return JSONResponse(
+            status_code=503,
+            content={"status": "not ready", "detail": "Database unavailable"}
+        )

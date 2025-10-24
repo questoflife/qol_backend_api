@@ -44,12 +44,7 @@ async def oauth_callback(request: Request):
         # Redirect back to frontend instead of showing error JSON
         return RedirectResponse(url=f"{get_settings().LOGIN_REDIRECT}", status_code=303)
     
-    # Exchange code -> tokens
-    try:
-        token = await discord.authorize_access_token(request)
-    except Exception:
-        # OAuth exchange failed - also redirect instead of showing error
-        return RedirectResponse(url=f"{get_settings().LOGIN_REDIRECT}", status_code=303)
+    token = await discord.authorize_access_token(request)
 
     # Fetch identity
     async with httpx.AsyncClient(timeout=10) as client:
