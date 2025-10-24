@@ -38,11 +38,18 @@ async def oauth_callback(request: Request):
     if discord is None:
         raise HTTPException(500, "Discord OAuth client not configured")
     
+    # Check if user cancelled or OAuth failed
+    if request.query_params.get("error"):
+        # User cancelled login or authorization was denied
+        # Redirect back to frontend instead of showing error JSON
+        return RedirectResponse(url=f"{get_settings().LOGIN_REDIRECT}", status_code=303)
+    
     # Exchange code -> tokens
     try:
         token = await discord.authorize_access_token(request)
     except Exception:
-        raise HTTPException(status_code=400, detail="OAuth exchange failed")
+        # OAuth exchange failed - also redirect instead of showing error
+        return RedirectResponse(url=f"{get_settings().LOGIN_REDIRECT}", status_code=303)
 
     # Fetch identity
     async with httpx.AsyncClient(timeout=10) as client:
