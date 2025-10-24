@@ -1,0 +1,28 @@
+# Docker Compose for Testing with MySQL Database
+# Used by VS Code test tasks and CI/CD pipelines
+
+services:
+  testing:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      target: testing
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - path: .env
+        required: false
+    command: pytest
+
+  db:
+    image: mysql:8.4
+    env_file:
+      - path: .env
+        required: false
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "--silent"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 30s

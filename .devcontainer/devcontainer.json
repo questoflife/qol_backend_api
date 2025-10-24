@@ -1,0 +1,30 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/docker-existing-docker-compose
+{
+	"name": "QoL Backend API Dev Container with DB",
+
+	// Use the dev-with-db compose file (includes MySQL)
+	// To run without database, change to: "docker-compose.dev.yml"
+	"dockerComposeFile": "docker-compose.dev-with-db.yml",
+
+	// The 'service' property is the name of the service for the container that VS Code should use
+	"service": "dev",
+
+	// Cleanup command when dev container shuts down
+	"shutdownAction": "stopCompose",
+
+	// The optional 'workspaceFolder' property is the path VS Code should open by default when
+	// connected. This is typically a file mount in .devcontainer/docker-compose.yml
+	"workspaceFolder": "/qol_backend_api",
+
+
+	// VS Code extensions to install in the container
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				// Python development essentials
+				"ms-python.python"
+			]
+		}
+	}
+}

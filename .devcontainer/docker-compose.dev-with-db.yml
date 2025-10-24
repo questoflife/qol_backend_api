@@ -1,0 +1,33 @@
+# Docker Compose for Development with MySQL Database
+# This is the recommended setup for most developers
+# The dev container will wait for MySQL to be healthy before starting
+
+services:
+  dev:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      target: dev
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - path: .env
+        required: false
+    group_add:
+      - ${DOCKER_GID:-1001}  # Docker group - see .env.example
+    volumes:
+      - ..:/qol_backend_api:cached
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  db:
+    image: mysql:8.4
+    env_file:
+      - path: .env
+        required: false
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "--silent"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 30s

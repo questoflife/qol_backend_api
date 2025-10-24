@@ -1,0 +1,15 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Run Tests (with MySQL)",
+            "type": "shell",
+            "command": "docker compose -f .devcontainer/docker-compose.test-with-db.yml run --rm --build testing; docker compose -f .devcontainer/docker-compose.test-with-db.yml down",
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            },
+            "problemMatcher": []
+        }
+    ]
+}

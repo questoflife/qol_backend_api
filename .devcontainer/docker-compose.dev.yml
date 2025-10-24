@@ -1,0 +1,18 @@
+# Docker Compose for Development (without database)
+# Use this if you want to run the dev container without MySQL
+# or manage MySQL separately
+
+services:
+  dev:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      target: dev
+    env_file:
+      - path: .env
+        required: false
+    group_add:
+      - ${DOCKER_GID:-1001}  # Docker group - see .env.example
+    volumes:
+      - ..:/qol_backend_api:cached
+      - /var/run/docker.sock:/var/run/docker.sock

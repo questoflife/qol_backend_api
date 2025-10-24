@@ -52,9 +52,6 @@ ENV PATH="/venv/.venv/bin:$PATH" \
 
 WORKDIR /qol_backend_api
 
-# Expose the default port for the API
-EXPOSE 8000
-
 # Add non-root user for security
 RUN groupadd -g 1000 appuser && \
     useradd -u 1000 -g appuser -s /bin/bash -m appuser && \
@@ -78,12 +75,6 @@ COPY --from=prod-builder --link /venv/.venv /venv/.venv
 
 # Copy only the application source code
 COPY src ./src
-
-# Add metadata labels
-LABEL org.opencontainers.image.title="${APP_NAME}" \
-      org.opencontainers.image.description="${APP_NAME}" \
-      org.opencontainers.image.vendor="${APP_VENDOR}" \
-      org.opencontainers.image.version="${APP_VERSION}"
 
 # Switch to non-root user for security
 USER appuser
@@ -122,11 +113,59 @@ RUN chown -R appuser:appuser /qol_backend_api
 # Switch to non-root user for security
 USER appuser
 
-# Add metadata labels
-LABEL org.opencontainers.image.title="${APP_NAME} - Testing" \
-      org.opencontainers.image.description="${APP_NAME} - Testing Environment" \
-      org.opencontainers.image.vendor="${APP_VENDOR}" \
-      org.opencontainers.image.version="${APP_VERSION}"
-
 # Start the testing environment
 CMD ["/usr/local/bin/startup_with_testing.sh"]
+
+#################################################################
+## DEVELOPMENT - Full development environment with tools
+#################################################################
+FROM testing-builder AS dev-builder
+RUN --mount=type=cache,target=$POETRY_CACHE_DIR poetry install --no-root --with testing --with dev
+
+# ---------------------------------------------------------------
+FROM runtime-base AS dev
+
+# Override PYTHONOPTIMIZE for development - we need assertions to work properly
+ENV PYTHONOPTIMIZE=0
+
+# Install development tools and Docker CLI
+RUN set -eux; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends \
+        # Essential development tools
+        vim \
+        git \
+        # Docker installation dependencies
+        ca-certificates \
+        curl \
+        gnupg \
+        lsb-release; \
+    # Add Docker's official GPG key
+    curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker.gpg; \
+    # Add Docker repository
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker.gpg] \
+        https://download.docker.com/linux/debian $(lsb_release -cs) stable" > /etc/apt/sources.list.d/docker.list; \
+    # Install Docker CLI and tools
+    apt-get update; \
+    apt-get install -y --no-install-recommends \
+        docker-ce-cli \
+        docker-buildx-plugin \
+        docker-compose-plugin; \
+    # Clean up package cache
+    rm -rf /var/lib/apt/lists/*
+
+# Copy Poetry and Python virtual environment from builder
+COPY --from=dev-builder --link /opt/poetry /opt/poetry
+COPY --from=dev-builder --link /venv/.venv /venv/.venv
+
+# Set Poetry environment variables and create symlink
+ENV POETRY_HOME=/opt/poetry \
+    POETRY_NO_INTERACTION=1 \
+    POETRY_VIRTUALENVS_IN_PROJECT=true
+RUN ln -s /opt/poetry/bin/poetry /usr/local/bin/poetry
+
+# Switch to non-root user for security
+USER appuser
+
+# Keep container running for development
+CMD ["sleep", "infinity"]

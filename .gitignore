@@ -4,17 +4,6 @@ __pycache__/
 .pytest_cache/
 
 # Environment files
+.devcontainer/.env
 .env
 app.env
-
-# Developer configuration (local files)
-.vscode/
-.devcontainer/
-dev/
-
-# Allow dev_example directory and all its contents to be tracked
-!dev_example/
-!dev_example/**
-
-# Logs
-db_inspect.log
