@@ -3,8 +3,9 @@ Shared pytest fixtures for the Quest of Life Backend API tests.
 """
 import pytest
 import os
+from fastapi import Request
 
-from src.database.models import Base
+from src.database.models import BaseModel
 from tests.database_utils import (
     create_pytest_engine_and_session_factory,
     _ensure_test_environment,
@@ -12,6 +13,7 @@ from tests.database_utils import (
     drop_test_schema,
 )
 from src.database.config import get_app_async_session
+from src.api.deps import get_current_discord_id, require_csrf
 from src.app import app
 
 # Ensure tests are only run in the test environment
@@ -43,13 +45,13 @@ async def clean_db(test_db_session_scope, session_factory):
     """
     # Clean all tables before test
     async with session_factory() as session:
-        for table in reversed(Base.metadata.sorted_tables):
+        for table in reversed(BaseModel.metadata.sorted_tables):
             await session.execute(table.delete())
         await session.commit()
     yield
     # Clean all tables after test
     async with session_factory() as session:
-        for table in reversed(Base.metadata.sorted_tables):
+        for table in reversed(BaseModel.metadata.sorted_tables):
             await session.execute(table.delete())
         await session.commit()
 
@@ -67,13 +69,36 @@ async def clean_db_session(clean_db, session_factory):
 @pytest.fixture
 async def clean_db_override_app_session(clean_db, session_factory):
     """
-    Sets up FastAPI dependency override to use a clean DB session per request during tests.
+    Sets up FastAPI dependency overrides for testing:
+    1. Uses a clean test DB session per request
+    2. Mocks authentication to return a test user (bypasses OAuth)
+    3. Mocks CSRF validation (always passes in tests)
+    4. Clears rate limiter state between tests
     Yields:
         None
     """
-    async def _override():
+    async def _override_session():
         async with session_factory() as session:
             yield session
-    app.dependency_overrides[get_app_async_session] = _override
+    
+    async def _override_auth(request: Request):
+        # Mock authentication - return a test Discord ID
+        # This bypasses the OAuth flow for testing
+        return "test_user_123"
+    
+    async def _override_csrf(request: Request):
+        # Mock CSRF validation - always passes in tests
+        return True
+    
+    # Clear rate limiter state before each test
+    from src.api.deps import limiter
+    limiter.reset()
+    
+    app.dependency_overrides[get_app_async_session] = _override_session
+    app.dependency_overrides[get_current_discord_id] = _override_auth
+    app.dependency_overrides[require_csrf] = _override_csrf
     yield
-    app.dependency_overrides.clear() 
+    app.dependency_overrides.clear()
+    
+    # Clear rate limiter state after each test as well
+    limiter.reset()

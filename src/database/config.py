@@ -11,44 +11,24 @@ import ssl
 from typing import AsyncGenerator
 from functools import lru_cache
 from pydantic_settings import BaseSettings
-
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine, AsyncEngine
 
+from src.settings import get_settings
 
 # Global variable declarations (type only, no assignment)
 _engine = None
 _async_session_factory = None
 
 
-class DatabaseSettings(BaseSettings):
-    DB_USER: str
-    DB_PASSWORD: str
-    DB_HOST: str
-    DB_PORT: str
-    DB_NAME: str
-    DB_SSL_DISABLE_VERIFICATION: bool = False
-
-    @property
-    def ASYNC_SERVER_URL(self) -> str:
-        return f"mysql+aiomysql://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}"
-
-
-@lru_cache(maxsize=1)
-def get_database_settings() -> DatabaseSettings:
-    """Load database settings from environment variables."""
-    return DatabaseSettings()  # loaded from env vars  # type: ignore[call-arg]
-
-
-
 def create_app_async_engine() -> AsyncEngine:
     """Create a new async SQLAlchemy engine for the configured database."""
-    url = f"{get_database_settings().ASYNC_SERVER_URL}/{get_database_settings().DB_NAME}"
+    url = f"{get_settings().ASYNC_SERVER_URL}/{get_settings().DB_NAME}"
     # TLS enforcement: always attempt an encrypted connection.
     # Optional verification disable (for local dev/test with self-signed MySQL auto certs):
     #   Set DB_SSL_DISABLE_VERIFICATION=true to skip hostname & cert validation.
     #   WARNING: Never set this in production; it weakens security (MITM risk).
     ssl_ctx = ssl.create_default_context()
-    disable_verification = get_database_settings().DB_SSL_DISABLE_VERIFICATION
+    disable_verification = get_settings().DB_SSL_DISABLE_VERIFICATION
     if disable_verification:
         # Relax verification while still encrypting the transport.
         ssl_ctx.check_hostname = False
@@ -84,3 +64,24 @@ async def get_app_async_session() -> AsyncGenerator[AsyncSession, None]:
     session_factory = get_cached_app_async_session_factory()
     async with session_factory() as session:
         yield session
+
+
+async def create_test_tables_if_not_exist():
+    """
+    Create all database tables if they don't already exist.
+    
+    SAFETY: Only runs if DB_NAME contains 'test'.
+    
+    This is idempotent - it will only create tables that don't exist.
+    
+    Raises:
+        RuntimeError: If DB_NAME does not contain 'test'
+    """
+    from src.database.models import BaseModel
+    from tests.database_utils import _ensure_test_environment
+    
+    _ensure_test_environment()
+    
+    engine = get_cached_app_async_engine()
+    async with engine.begin() as conn:
+        await conn.run_sync(BaseModel.metadata.create_all)

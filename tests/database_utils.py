@@ -5,8 +5,9 @@ managing schema lifecycle. All helpers enforce that the configured DB name
 contains 'test' to reduce risk of accidental destructive operations against
 non-test databases.
 """
-from src.database.config import get_database_settings, create_app_async_engine, create_app_async_session_factory
-from src.database.models import Base
+from src.settings import get_settings
+from src.database.config import create_app_async_engine, create_app_async_session_factory
+from src.database.models import BaseModel
 
 
 def _ensure_test_environment():
@@ -15,8 +16,8 @@ def _ensure_test_environment():
     Checks that DB_NAME contains 'test'.
     Raises RuntimeError if not safe.
     """
-    if "test" not in get_database_settings().DB_NAME.lower():
-        raise RuntimeError(f"Operation can only be run if DB_NAME contains 'test' (got DB_NAME={get_database_settings().DB_NAME})!")
+    if "test" not in get_settings().DB_NAME.lower():
+        raise RuntimeError(f"Operation can only be run if DB_NAME contains 'test' (got DB_NAME={get_settings().DB_NAME})!")
 
 def create_pytest_engine_and_session_factory():
     """
@@ -49,7 +50,7 @@ async def create_test_schema_once():
     engine, _session_factory = create_pytest_engine_and_session_factory()
     try:
         async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
+            await conn.run_sync(BaseModel.metadata.create_all)
     finally:
         await engine.dispose()
 
@@ -60,6 +61,6 @@ async def drop_test_schema():
     engine, _session_factory = create_pytest_engine_and_session_factory()
     try:
         async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.drop_all)
+            await conn.run_sync(BaseModel.metadata.drop_all)
     finally:
         await engine.dispose()

@@ -45,8 +45,15 @@ RUN set -eux; \
     # Clean up package cache
     rm -rf /var/lib/apt/lists/*
 
-# Copy the Python virtual environment with all dependencies
+# Copy Poetry and Python virtual environment from builder
+COPY --from=dev-builder --link /opt/poetry /opt/poetry
 COPY --from=dev-builder --link /venv/.venv /venv/.venv
+
+# Set Poetry environment variables and create symlink
+ENV POETRY_HOME=/opt/poetry \
+    POETRY_NO_INTERACTION=1 \
+    POETRY_VIRTUALENVS_IN_PROJECT=true
+RUN ln -s /opt/poetry/bin/poetry /usr/local/bin/poetry
 
 # Add metadata labels
 LABEL org.opencontainers.image.title="QoL Backend API - Development" \
