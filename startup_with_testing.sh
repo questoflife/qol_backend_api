@@ -5,4 +5,4 @@ echo "==== Running tests ===="
 pytest "$@"
 
 echo "==== Tests passed. Starting server ===="
-exec python -m uvicorn src.app:app --host 0.0.0.0 --port 8000
+exec python -m uvicorn src.app:app --host 0.0.0.0 --port 8000 --proxy-headers
