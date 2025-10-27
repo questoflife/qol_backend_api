@@ -52,3 +52,7 @@ Find documentation in the `docs` directory
 | Dependency mgr  | Poetry                |
 | Container       | Docker                |
 
+# TODO
+SECURITY.md
+Proper versioning practice with CHANGELOG.md for initial realease
+LICENSE & CONTRIBUTING.md
