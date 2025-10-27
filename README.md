@@ -1,11 +1,45 @@
 # Quest of Life Backend API
 
-Async FastAPI backend for the Quest of Life website.
+This is a REST API for a backend and database to the Quest of Life website.
 
-This repository contains a Python backend service that exposes a REST API and connects to a MySQL database. It handles user data storage and retrieval for the Quest of Life website.
+# Setup
+## Production
+**Prerequisites:** Docker 20.10+, MySQL 8 database
 
-## Tech Stack
+- Run a MySQL 8 database in your preferred manner.
+- Prepare the environment variables as per specification in `.devcontainer/.env.example`.
+- Build and run the Dockerfile `prod` stage with its default entrypoint (with env vars from *step 2*)
 
+**For testing:** build and run the Dockerfile `testing` stage instead. It will first run its tests. If all tests pass, it will launch the app.
+
+## Development and Local Testing
+**Prerequisites:** Docker 20.10+, Docker Compose 2.24+
+
+**Step 1:** Copy `.devcontainer/.env.example` to `.devcontainer/.env` and modify accordingly (see comments in the file and section **Env Variables**)
+
+*The project is configured to launch a MySQL 8 Database in a docker container explicitly for this app only. Choose one of the following three sections depending on what setup you want:*
+### Option 1: In VS Code, in container, with database: (Recommended) 
+**For Development:** Open project in container (Dockerfile `dev` stage with MySQL `db` container)
+
+**For Testing** Run VS code test task (Dockerfile `test` stage running tests only, with MySQL `db` container)
+
+
+### Option 2: Using docker-compose directly, with database
+**For Development:** `docker compose -f .devcontainer/docker-compose.dev-with-db.yml up`
+
+**For Testing** `docker compose -f .devcontainer/docker-compose.test-with-db.yml run --rm --build testing; docker compose -f .devcontainer/docker-compose.test-with-db.yml down`
+
+
+### Option 3: Using docker-compose directly, without database
+*Make sure to set up your own MySQL 8 Database and provide its credentials appropriately in `.devcontainer/.env`*
+**For Development:** `docker compose -f .devcontainer/docker-compose.dev.yml up`
+
+**For Testing** `docker compose -f .devcontainer/docker-compose.test.yml run --rm --build testing`
+
+# Documentation
+Find documentation in `docs
+
+### Tech Stack
 | Layer           | Choice                |
 | --------------- | --------------------- |
 | Language        | Python 3.12           |
@@ -16,39 +50,3 @@ This repository contains a Python backend service that exposes a REST API and co
 | Dependency mgr  | Poetry                |
 | Container       | Docker                |
 
-## Quick Start
-
-> **Note:** This is for production setup only. For development instructions, see the [Installation Guide](docs/01-installation.md).
-
-### Prerequisites
-- Docker 20.10+ (for BuildKit support)
-- Docker Compose 2.24+ (for env_file.required feature)
-- MySQL 8 database
-
-### Production Setup
-1. **Configure environment:**
-   ```bash
-   cp app.env.example app.env
-   ```
-   Fill in your database credentials in `app.env`.
-
-2. **Run:**
-   ```bash
-   docker compose up
-   ```
-   > **Note:** If you get syntax errors, ensure you have Docker 20.10+ and Docker Compose 2.24+
-
-3. **Test:**
-   ```bash
-   docker compose run testing pytest
-   ```
-
-## Documentation
-
-For detailed setup, development, and testing instructions, see:
-
-- **[Installation Guide](docs/01-installation.md)** - Complete setup instructions for production and development
-- **[Configuration Guide](docs/02-configuration.md)** - Environment variables and configuration
-- **[Architecture Guide](docs/03-architecture.md)** - Codebase structure and API endpoints
-- **[Testing Guide](docs/04-testing.md)** - Running tests and test framework details
-- **[Development Guide](docs/05-development-guide.md)** - Development workflow and coding standards

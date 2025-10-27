@@ -30,6 +30,7 @@ def create_app_async_engine() -> AsyncEngine:
     ssl_ctx = ssl.create_default_context()
     disable_verification = get_settings().DB_SSL_DISABLE_VERIFICATION
     if disable_verification:
+        print("WARNING: SSL verification is DISABLED for the database connection.")
         # Relax verification while still encrypting the transport.
         ssl_ctx.check_hostname = False
         ssl_ctx.verify_mode = ssl.CERT_NONE  # type: ignore[attr-defined]
