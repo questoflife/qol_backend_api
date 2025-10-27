@@ -1,0 +1,14 @@
+# Docker Compose for Testing (without Database)
+# Use this if you want to run the dev container without MySQL
+# or manage MySQL separately
+
+services:
+  testing:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      target: testing
+    env_file:
+      - path: .env
+        required: false
+    command: pytest
