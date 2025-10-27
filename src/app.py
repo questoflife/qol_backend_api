@@ -48,7 +48,7 @@ async def database_error_handler(request: Request, exc: DatabaseError):
     """Handle database errors gracefully with user-friendly messages."""
     return JSONResponse(
         status_code=500,
-        content={"detail": "Database operation failed. Please try again."}
+        content={"detail": f"Database operation failed with exception {exc}. Please try again."}
     )
 
 

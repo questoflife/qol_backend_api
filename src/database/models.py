@@ -2,7 +2,6 @@
 SQLAlchemy models for the Quest of Life Backend API.
 Defines the database schema for user key-value storage.
 """
-import enum
 from sqlalchemy import String, Text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 

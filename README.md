@@ -2,6 +2,8 @@
 
 This is a REST API for a backend and database to the Quest of Life website.
 
+Currently the app can only be run on a single server, not parallel. Redis would have to be implemented for that to be possible (for rate limiter).
+
 # Setup
 ## Production
 **Prerequisites:** Docker 20.10+, MySQL 8 database
@@ -37,7 +39,7 @@ This is a REST API for a backend and database to the Quest of Life website.
 **For Testing** `docker compose -f .devcontainer/docker-compose.test.yml run --rm --build testing`
 
 # Documentation
-Find documentation in `docs
+Find documentation in the `docs` directory
 
 ### Tech Stack
 | Layer           | Choice                |
